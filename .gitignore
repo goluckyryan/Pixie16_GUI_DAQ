@@ -1,0 +1,8 @@
+*.o
+*.log
+*.bin
+*.csv
+*.gch
+
+test
+example
