@@ -68,27 +68,13 @@ private:
   unsigned int * ExtFIFO_Data;
   unsigned int * Statistics;
   
+  double Baselines[3640], TimeStamps[3640];  ///for baseline
+  unsigned short ADCTrace[8192];
+    
   DataBlock * data;
   unsigned int nextWord;
   
   std::ofstream outFile;
-
-  /***
-  struct channelSetting{
-    double trigger_risetime;
-    double trigger_flattop;
-    double trigger_threshold;
-    double energy_risetime;
-    double energy_flattop;
-    double tau;
-    double trace_length;
-    double trace_delay;
-    double V_offset;
-    double XDT;
-    double baseline_percent;
-    double energy_minumum; //EMIN
-    double baseline_cut;   //BLCUT
-  };**/
   
 public:
 
@@ -108,6 +94,14 @@ public:
   void BootDigitizers();
     
   void AdjustOffset();
+  void CaptureBaseLine(unsigned short modID, unsigned short ch);
+  int      GetBaslineLength()     {return 3640;}
+  double * GetBasline()            {return Baselines;}
+  double * GetBaselineTimestamp()  {return TimeStamps;}
+  
+  void CaptureADCTrace(unsigned short modID, unsigned short ch);
+  int GetADCTraceLength()          {return 8192;}
+  unsigned short * GetADCTrace()   {return ADCTrace;}
   
   ///========================= Setting
 
@@ -172,26 +166,19 @@ public:
   double GetLiveTime(unsigned short modID, unsigned short ch);
   double GetOutputCountRate(unsigned short modID, unsigned short ch);
   double GetRealTime(unsigned short modID);
-  void PrintStatistics(unsigned short modID);
-  
-  void GetTrace(unsigned short modID, unsigned short ch);
-  void GetBaseLines(unsigned short modID, unsigned short ch);
+  void   PrintStatistics(unsigned short modID);
+
   
   void ReadData(unsigned short modID);
   
-  void PrintExtFIFOData(int a) { printf("%5d-%5d | %08X  %08X  %08X  %08X \n", a, a+3, ExtFIFO_Data[a], ExtFIFO_Data[a+1], ExtFIFO_Data[a+2], ExtFIFO_Data[a+3]);} 
   unsigned int GetnFIFOWords() {return nFIFOWords;}
   unsigned int GetNextWord()   {return nextWord;}
-  DataBlock * GetData()        {return data;}
-  void ProcessSingleData();
-  void ProcessData(int verbose = 0);
+  DataBlock *  GetData()       {return data;}
+  bool ProcessSingleData();
   
   void OpenFile(std::string fileName, bool append);
   void SaveData();
   void CloseFile();
-  
-  
-  //void SaveData(char * fileName, unsigned short isEndOfRun);
   
   
 };

@@ -29,8 +29,8 @@ LIBS = $(APIBASE)libPixie16Api.so $(APIBASE)libPixieSDK.a $(PLXBASE)PlxApi.a
 
 all: test example
 
-example : example.o Pixie16Class.o
-	$(CC) $(INCFLAGS) example.o Pixie16Class.o  $(LIBS) -o example
+example : example.o 
+	$(CC) $(INCFLAGS) example.o  $(LIBS) -o example
 
 example.o : example.cpp
 	$(CC) $(CFLAGS) $(INCFLAGS)  example.cpp 

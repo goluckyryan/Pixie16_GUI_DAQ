@@ -308,7 +308,7 @@ bool execute_list_mode_run(const configuration& cfg, const double& runtime_in_se
 
     std::vector<std::ofstream*> output_streams(cfg.num_modules());
     for (unsigned short i = 0; i < cfg.num_modules(); i++) {
-        output_streams[i] = new std::ofstream(generate_filename(i, "list-mode", "bin"),
+        output_streams[i] = new std::ofstream(generate_filename(i, "list-mode", "evt"),
                                               std::ios::out | std::ios::binary);
     }
 

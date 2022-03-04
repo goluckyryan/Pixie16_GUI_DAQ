@@ -14,7 +14,7 @@
 #include "TString.h"
 #include "TBenchmark.h"
 
-#include "DataBlock.h"
+#include "../armory/DataBlock.h"
 
 #define MAX_CRATES 2
 #define MAX_BOARDS_PER_CRATE 13
@@ -37,7 +37,7 @@ class evtReader{
     long int  nBlock;
     
     unsigned int extraHeader[14];
-    unsigned int traceBlock[4000];
+    unsigned int traceBlock[MAX_TRACE_LENGHT/2];
     
     TBenchmark gClock;
 
@@ -119,6 +119,8 @@ void evtReader::OpenFile(TString inFileName){
     
     gClock.Reset();
     gClock.Start("timer");
+    
+    isOpened = true;
   }
 };
 
@@ -135,7 +137,7 @@ bool evtReader::IsEndOfFile() {
 }
 
 
-int evtReader::ReadBlock(int opt = 0){
+int evtReader::ReadBlock(int opt){
 
   if( feof(inFile) ) return -1;
   if( endOfFile ) return -1;
@@ -164,10 +166,8 @@ int evtReader::ReadBlock(int opt = 0){
     data->trace_length = (header[3] >> 16) & 0x7FFF;
     data->trace_out_of_range =  header[3] >> 31;
 
-    //data->id = data->crate*MAX_BOARDS_PER_CRATE*MAX_CHANNELS_PER_BOARD + (data->slot-BOARD_START)*MAX_CHANNELS_PER_BOARD + data->ch;
-    //data->detID = mapping[data->id];
-
     data->ClearQDC();
+    data->ClearTrace();
 
     ///======== read QDCsum
     if( data->headerLength >= 4 ){
@@ -193,15 +193,16 @@ int evtReader::ReadBlock(int opt = 0){
       data->baseline = 0;
     }
     ///====== read trace
-    if( data->eventLength > data->headerLength ){      
+    if( data->eventLength > data->headerLength ){
       fread(traceBlock, sizeof(unsigned int) * ( data->trace_length / 2 ), 1, inFile);
-      
+    
       for( int i = 0; i < data->trace_length/2 ; i++){
-        data->trace[2*i+0] = traceBlock[i] & 0xFFFF ;
+        data->trace[2*i+0] =  traceBlock[i] & 0xFFFF ;
         data->trace[2*i+1] = (traceBlock[i] >> 16 ) & 0xFFFF ;
       }
       
       ///make QDC by trace
+      /**
       if( data->headerLength == 4 || data->headerLength == 8 ) {
         for( int i = 0; i < 8; i++){ data->QDCsum[i] = 0;}
         for( int i = 0; i < data->trace_length; i++){
@@ -214,7 +215,7 @@ int evtReader::ReadBlock(int opt = 0){
           if( 160 <= i && i < 175 ) data->QDCsum[6] += data->trace[i];
           if( 175 <= i && i < 200 ) data->QDCsum[7] += data->trace[i];
         }
-      }
+      }*/
     }
   }
   

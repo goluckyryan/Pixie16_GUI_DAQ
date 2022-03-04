@@ -230,6 +230,25 @@ void Pixie16::AdjustOffset(){
   
 }
 
+void Pixie16::CaptureBaseLine(unsigned short modID, unsigned short ch){  
+  retval = Pixie16AcquireBaselines(modID);
+  if( CheckError("Pixie16AcquireBaselines::MOD::"+std::to_string(modID)) < 0 ) return;
+  
+  retval = Pixie16ReadSglChanBaselines(Baselines, TimeStamps, 3640, modID, ch);
+  if( CheckError("Pixie16ReadSglChanBaselines::MOD::"+std::to_string(modID) + "CH::"+std::to_string(ch)) < 0 ) return;
+  
+}
+
+void Pixie16::CaptureADCTrace(unsigned short modID, unsigned short ch){
+  
+  retval = Pixie16AcquireADCTrace (modID);
+  if( CheckError("Pixie16AcquireADCTrace") < 0 ) return;
+  
+  retval = Pixie16ReadSglChanADCTrace (ADCTrace, 8192, modID, ch);
+  if( CheckError("Pixie16ReadSglChanADCTrace") < 0 ) return;
+  
+}
+
 void Pixie16::StartRun(bool listMode){
   
   unsigned short mode = NEW_RUN; //RESUME_RUN
@@ -270,27 +289,26 @@ void Pixie16::StopRun(){
 void Pixie16::ReadData(unsigned short modID){
 
   if( Pixie16CheckRunStatus(modID) == 1){
-    unsigned int oldnFIFOWords = nFIFOWords;
     retval = Pixie16CheckExternalFIFOStatus (&nFIFOWords, modID);
     if( CheckError("Pixie16CheckExternalFIFOStatus") < 0 ) return;
-    if(nFIFOWords *1.0 / EXTERNAL_FIFO_LENGTH > 0.2) {
-    //if(nFIFOWords  > 0) {
+    ///if(nFIFOWords *1.0 / EXTERNAL_FIFO_LENGTH > 0.2) {
+    if(nFIFOWords  > 0) {
       printf("\033[1;31m####### READ DATA \033[m: number of word in module-%d FIFO : %d \n", modID, nFIFOWords);
       if( ExtFIFO_Data != NULL ) delete ExtFIFO_Data;
       ExtFIFO_Data = new unsigned int [nFIFOWords];
       retval = Pixie16ReadDataFromExternalFIFO(ExtFIFO_Data, nFIFOWords, modID);
       CheckError("Pixie16ReadDataFromExternalFIFO");
-      nextWord = nextWord - oldnFIFOWords;
     }
   }else{
     printf("Pixie16 is not running.\n");
   }
 }
 
-void Pixie16::ProcessSingleData(){
+bool Pixie16::ProcessSingleData(){
+  
+  bool breakProcessLoopFlag = false;
   
   if( nextWord < nFIFOWords ){
-  
     data->ch           =  ExtFIFO_Data[nextWord] & 0xF ;
     data->slot         = (ExtFIFO_Data[nextWord] >> 4) & 0xF;
     data->crate        = (ExtFIFO_Data[nextWord] >> 8) & 0xF;
@@ -299,7 +317,7 @@ void Pixie16::ProcessSingleData(){
     data->pileup       =  ExtFIFO_Data[nextWord] >> 31 ;
     data->eventID ++;
     
-    if( nextWord + data->eventLength < nFIFOWords ){
+    if( nextWord + data->eventLength <= nFIFOWords ){
     
       data->time         = ((unsigned long long)(ExtFIFO_Data[nextWord+2] & 0xFFFF) << 32) + ExtFIFO_Data[nextWord+1];
       data->cfd          =  ExtFIFO_Data[nextWord + 2] >> 16 ; 
@@ -312,8 +330,6 @@ void Pixie16::ProcessSingleData(){
           data->trace[2*i+0] =  ExtFIFO_Data[nextWord + data->headerLength + i] & 0xFFFF ;
           data->trace[2*i+1] = (ExtFIFO_Data[nextWord + data->headerLength + i] >> 16 ) & 0xFFFF ;
         }
-      }else{
-        data->ClearTrace();
       }
     }else{
       data->time = 0;
@@ -324,52 +340,14 @@ void Pixie16::ProcessSingleData(){
     }
     
     nextWord += data->eventLength ;
-  }
+    
+    if( nextWord == nFIFOWords ) {nextWord = 0; breakProcessLoopFlag = true;}
+    if( nextWord > nFIFOWords ) {nextWord = nextWord - nFIFOWords; breakProcessLoopFlag = true;}
 
-}
-
-void Pixie16::ProcessData(int verbose){
-
-  if( verbose >= 2 ) for( unsigned int i = 0; i < nFIFOWords; i++) printf("%5d|%X|\n", i, ExtFIFO_Data[nextWord+i]);
-  
-  while( nextWord < nFIFOWords ){
-    ProcessSingleData();
-    if( verbose >= 1 ) data->Print(0);
-    if( verbose >= 3 ) data->Print(1); /// print trace
   }
   
-}
+  return breakProcessLoopFlag ; 
 
-void Pixie16::GetTrace(unsigned short modID, unsigned short ch){
-  
-  unsigned short ADCTrace[8192];
-  retval = Pixie16AcquireADCTrace (modID);
-  if( CheckError("Pixie16AcquireADCTrace") < 0 ) return;
-  
-  retval = Pixie16ReadSglChanADCTrace (ADCTrace, 8192, modID, ch);
-  if( CheckError("Pixie16ReadSglChanADCTrace") < 0 ) return;
-  
-  for( int i = 0; i < 8192 ; i++){
-    printf("%4d, %d \n", i, ADCTrace[i]);
-  }
-}
-
-
-void Pixie16::GetBaseLines(unsigned short modID, unsigned short ch){
-  
-  retval = Pixie16AcquireBaselines(modID);
-  if( CheckError("Pixie16AcquireBaselines") < 0 ) return;
-  
-
-  double Baselines[3640], TimeStamps[3640];
-  
-  retval = Pixie16ReadSglChanBaselines(Baselines, TimeStamps, 3640, modID, ch);
-  if( CheckError("Pixie16ReadSglChanBaselines") < 0 ) return;
-  
-  for( int i = 0; i < 3640; i++){
-    printf("%4d, %.4f, %.4f \n", i, Baselines[i], TimeStamps[i]);
-  }
-  
 }
 
 unsigned int Pixie16::GetDigitizerSetting(std::string parName, unsigned short modID, bool verbose){
