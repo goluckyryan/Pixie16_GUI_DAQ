@@ -14,6 +14,27 @@
 #include "Pixie16Class.h"
 
 
+#include "TROOT.h"
+#include "TSystem.h"
+#include "TStyle.h"
+#include "TString.h"
+#include "TFile.h"
+#include "TTree.h"
+#include "TCanvas.h"
+#include "TH1F.h"
+#include "TH2F.h"
+#include "TGraph.h"
+#include "TCutG.h"
+#include "TMultiGraph.h"
+#include "TApplication.h"
+#include "TObjArray.h"
+#include "TLegend.h"
+#include "TRandom.h"
+#include "TLine.h"
+#include "TMacro.h"
+#include "TRootCanvas.h"
+
+
 long get_time();
 static struct termios g_old_kbd_mode;
 static void cooked(void);  ///set keyboard behaviour as wait-for-enter
@@ -36,8 +57,6 @@ void PrintCommands(){
   printf("r ) RiseTime \n");
   printf("t ) Trigger \n");
 
-  
-  
 }
 
 ///##################################################
@@ -50,12 +69,22 @@ int main(int argc, char *argv[]){
     return 0;
   }
   
-  pixie->GetDigitizerSettings(0);
+  TApplication * app = new TApplication("app", &argc, argv); 
+  
+  TCanvas * canvas = new TCanvas("canvas", "Canvas", 1800, 400);
+  canvas->Divide(3,1);
+  
+  TH1F * hch = new TH1F("hch", "channel", 16, 0, 16);
+  TH1F * hE = new TH1F("hE", "energy", 400, 0, 30000);
+  TGraph * gTrace = new TGraph();
+  gTrace->GetXaxis()->SetTitle("time [ch, 1 ch = 4 ns]");
+  
+  //pixie->SetDigitizerPresetRunTime(100000, 0);
+  //pixie->SetDigitizerSynchWait(0, 0); // not simultaneously
+  //pixie->SetDigitizerInSynch(1, 0);   //not simultaneously
+  
+  pixie->PrintDigitizerSettings(0);
 
-  ///pixie->GetHostCSR(0);
-  
-  ///pixie->SaveSettings("haha.set");
-  
   /*
   pixie->GetPolarity(0, 6, 1);
   pixie->SetPolarity(false, 0, 6);
@@ -64,41 +93,77 @@ int main(int argc, char *argv[]){
   pixie->GetPolarity(0, 6, 1);
   */
 
-  
   int ch = 6;
   double time = 0.5; ///sec
   
   /*
   for( int i = 0; i < 16; i++){
-    if( i == ch ){
-      pixie->WriteChannelTriggerThreshold(10, 0, i);
-      pixie->WriteChannelEnergyRiseTime(4, 0, i);    
-      pixie->WriteChannelEnergyTau(50, 0, i);
-      pixie->WriteChannelTraceLenght(1, 0, i);
-      pixie->WriteChannelTraceDelay(0.5, 0, i);
-      pixie->SetPositivePolarity(true, 0, i);
-      pixie->SetTraceOnOff(false, 0, i);
-  
-    }else{
-      pixie->WriteChannelTriggerThreshold(500, 0, i);
-      pixie->SetChannleOnOff(false, 0, i);
-    }
+      pixie->SetChannelTriggerThreshold(5000, 0, i);
+      pixie->SetChannelOnOff(false, 0, i);
+      pixie->SetChannelTraceOnOff(false, 0, i);
+      pixie->SetChannelVOffset(0, 0, i);
   }
-  */
-  pixie->WriteChannelTriggerThreshold(500, 0, 6);
+  * */
+  
+  //pixie->SetChannelEnergyRiseTime(2, 0, ch);
+  pixie->SetChannelTriggerThreshold(300, 0, ch);
+  //pixie->SetChannelEnergyTau(50, 0, ch);
+  //pixie->SetChannelOnOff(true, 0, ch);
+  //pixie->SetChannelPositivePolarity(true, 0, ch);
+  //pixie->SetChannelTraceOnOff(true, 0, ch);
+  pixie->SetChannelVOffset(-1.0, 0, ch);
+  pixie->SetChannelTraceLenght(10, 0, ch);
+  pixie->SetChannelTraceDelay(2, 0, ch);
   pixie->SaveSettings("test_ryan.set");
+  
+  
+  pixie->PrintChannelAllSettings(0, ch);
   
   pixie->PrintChannelsMainSettings(0);
   
   printf("start run for %f sec\n", time);
+  
+  //pixie->AdjustOffset();
+  
+  uint32_t StartTime = get_time(), CurrentTime = get_time();
   pixie->StartRun(1);
   
-  ///pixie->GetHostCSR(0);
+  DataBlock * data = pixie->GetData();
   
-  usleep(time*1e6);
+  while( CurrentTime - StartTime < time * 1000 ){
+    
+    pixie->ReadData(0);
+    
+    while( pixie->GetNextWord() < pixie->GetnFIFOWords() ){
+
+      //for( int i = pixie->GetNextWord(); i < pixie->GetNextWord() + 314 ; i++) pixie->PrintExtFIFOData(i);       
+      pixie->ProcessSingleData();
+      //data->Print(0);
+      //printf("--------------next  word : %d (%d) | event lenght : %d \n", pixie->GetNextWord(), pixie->GetnFIFOWords(),  data->eventLength);
+      
+
+        hch->Fill( data->ch);
+        hE->Fill( data->energy );
+        if( data->trace_length > 0 ) {
+          for( int i = 0 ; i < data->trace_length; i++){
+            gTrace->SetPoint(i, i, data->trace[i]);
+            //if( i % 200 == 0 ) printf("%i, %d \n", i, data->trace[i]);
+          }
+          canvas->cd(3); gTrace->Draw("APL");
+        }
+        
+        canvas->cd(1); hch->Draw();
+        canvas->cd(2); hE->Draw();
+        canvas->Modified();
+        canvas->Update();
+        gSystem->ProcessEvents();
+      
+    }
+    
+    CurrentTime = get_time();
+  }
+  
   pixie->StopRun();
-  
-  pixie->ReadData(0);
   
   //pixie->PrintData();
   
@@ -197,6 +262,8 @@ int main(int argc, char *argv[]){
 
   
   //delete pixie;
+  
+  app->Run();
   
   printf("================ end of program. \n");
   return 0;

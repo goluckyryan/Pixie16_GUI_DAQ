@@ -1,12 +1,13 @@
 #ifndef PIXIE16_CPP
 #define PIXIE16_CPP
 
-#include "pixie16/pixie16.h"
+
 //#include "pixie16app_export.h"
 //#include "pixie16sys_export.h"
 //#include "def21160.h"
 
 #include <bitset>
+#include <fstream>
 #include <iostream>
 #include <stdexcept>
 #include <stdio.h>
@@ -51,6 +52,7 @@ Pixie16::Pixie16(){
     Statistics = NULL;
     
     data = new DataBlock();
+    nextWord = 0;
   }
 }
 
@@ -219,17 +221,37 @@ void Pixie16::BootDigitizers(){
   
 }
 
+
+void Pixie16::AdjustOffset(){
+  
+  retval = Pixie16AdjustOffsets(NumModules);
+  if( CheckError("Pixie16AdjustOffsets") < 0 ) return;
+  printf(" Adjust Offset for All modules.\n");
+  
+}
+
 void Pixie16::StartRun(bool listMode){
   
   unsigned short mode = NEW_RUN; //RESUME_RUN
   
-  for( int i = 0 ; i < NumModules; i++){
-    retval = Pixie16StartListModeRun(i, 0x100, mode);
-    if( CheckError("Pixie16StartListModeRun") < 0 ) return;
-    printf("\033[32mModule-%d run\033[0m\n", i);
+  //listmode
+  if( listMode ){
     
-    isRunning = true;
+    //SetDigitizerSynchWait(1, i);
+    //SetDigitizerInSynch(0, i);
+    
+    retval = Pixie16StartListModeRun(NumModules, LIST_MODE_RUN, mode);
+    if( CheckError("Pixie16StartListModeRun") < 0 ) return;
+    printf("\033[32m LIST_MODE run\033[0m\n");
+  }else{
+    //MCA mode
+    retval = Pixie16StartHistogramRun(NumModules, mode);
+    if( CheckError("Pixie16StartHistogramRun") < 0 ) return;
+    printf("\033[32m MCA MODE run\033[0m\n");
   }
+  
+  isRunning = true;
+
 
 }
 
@@ -247,47 +269,75 @@ void Pixie16::StopRun(){
 
 void Pixie16::ReadData(unsigned short modID){
 
-  retval = Pixie16CheckExternalFIFOStatus (&nFIFOWords, modID);
+  if( Pixie16CheckRunStatus(modID) == 1){
+    unsigned int oldnFIFOWords = nFIFOWords;
+    retval = Pixie16CheckExternalFIFOStatus (&nFIFOWords, modID);
+    if( CheckError("Pixie16CheckExternalFIFOStatus") < 0 ) return;
+    if(nFIFOWords *1.0 / EXTERNAL_FIFO_LENGTH > 0.2) {
+    //if(nFIFOWords  > 0) {
+      printf("\033[1;31m####### READ DATA \033[m: number of word in module-%d FIFO : %d \n", modID, nFIFOWords);
+      if( ExtFIFO_Data != NULL ) delete ExtFIFO_Data;
+      ExtFIFO_Data = new unsigned int [nFIFOWords];
+      retval = Pixie16ReadDataFromExternalFIFO(ExtFIFO_Data, nFIFOWords, modID);
+      CheckError("Pixie16ReadDataFromExternalFIFO");
+      nextWord = nextWord - oldnFIFOWords;
+    }
+  }else{
+    printf("Pixie16 is not running.\n");
+  }
+}
 
-  printf("number of word in module-%d FIFO : %d \n", modID, nFIFOWords);
-
-  if(nFIFOWords > 0) {
-    if( ExtFIFO_Data != NULL ) delete ExtFIFO_Data;
-    ExtFIFO_Data = new unsigned int [nFIFOWords];
-    retval = Pixie16ReadDataFromExternalFIFO(ExtFIFO_Data, nFIFOWords, modID);
-    if( CheckError("Pixie16ReadDataFromExternalFIFO") < 0 ) return;
+void Pixie16::ProcessSingleData(){
+  
+  if( nextWord < nFIFOWords ){
+  
+    data->ch           =  ExtFIFO_Data[nextWord] & 0xF ;
+    data->slot         = (ExtFIFO_Data[nextWord] >> 4) & 0xF;
+    data->crate        = (ExtFIFO_Data[nextWord] >> 8) & 0xF;
+    data->headerLength = (ExtFIFO_Data[nextWord] >> 12) & 0x1F;
+    data->eventLength  = (ExtFIFO_Data[nextWord] >> 17) & 0x3FFF;
+    data->pileup       =  ExtFIFO_Data[nextWord] >> 31 ;
+    data->eventID ++;
+    
+    if( nextWord + data->eventLength < nFIFOWords ){
+    
+      data->time         = ((unsigned long long)(ExtFIFO_Data[nextWord+2] & 0xFFFF) << 32) + ExtFIFO_Data[nextWord+1];
+      data->cfd          =  ExtFIFO_Data[nextWord + 2] >> 16 ; 
+      data->energy       = (ExtFIFO_Data[nextWord + 3] & 0xFFFF ); 
+      data->trace_length = (ExtFIFO_Data[nextWord + 3] >> 16) & 0x7FFF;
+      data->trace_out_of_range =  ExtFIFO_Data[nextWord + 3] >> 31;
+      
+      if( data->eventLength > data->headerLength ){      
+        for( int i = 0; i < data->trace_length/2 ; i++){
+          data->trace[2*i+0] =  ExtFIFO_Data[nextWord + data->headerLength + i] & 0xFFFF ;
+          data->trace[2*i+1] = (ExtFIFO_Data[nextWord + data->headerLength + i] >> 16 ) & 0xFFFF ;
+        }
+      }else{
+        data->ClearTrace();
+      }
+    }else{
+      data->time = 0;
+      data->cfd = 0;
+      data->energy = 0;
+      data->trace_length = 0;
+      data->trace_out_of_range = 0;
+    }
+    
+    nextWord += data->eventLength ;
   }
 
 }
 
-void Pixie16::PrintData(){
-  
-  printf("----------------------------\n");
-  printf("number of words read : %d \n", nFIFOWords);
-  
-  unsigned int word = 0;
+void Pixie16::ProcessData(int verbose){
 
-  for( unsigned int i = 0; i < nFIFOWords; i++) printf("%5d|%X|\n", i, ExtFIFO_Data[word]);
+  if( verbose >= 2 ) for( unsigned int i = 0; i < nFIFOWords; i++) printf("%5d|%X|\n", i, ExtFIFO_Data[nextWord+i]);
   
-  while( word < nFIFOWords ){
-    data->ch           =  ExtFIFO_Data[word] & 0xF ;
-    data->slot         = (ExtFIFO_Data[word] >> 4) & 0xF;
-    data->crate        = (ExtFIFO_Data[word] >> 8) & 0xF;
-    data->headerLength = (ExtFIFO_Data[word] >> 12) & 0x1F;
-    data->eventLength  = (ExtFIFO_Data[word] >> 17) & 0x3FFF;
-    data->pileup       =  ExtFIFO_Data[word] >> 31 ;
-    data->time         = ((unsigned long long)(ExtFIFO_Data[word+2] & 0xFFFF) << 32) + ExtFIFO_Data[word+1];
-    data->cfd          =  ExtFIFO_Data[word + 2] >> 16 ; 
-    data->energy       = (ExtFIFO_Data[word + 3] & 0xFFFF ); 
-    data->trace_length = (ExtFIFO_Data[word + 3] >> 16) & 0x7FFF;
-    data->trace_out_of_range =  ExtFIFO_Data[word + 3] >> 31;
-    
-    data->Print(0);
-    data->eventID ++;
-        
-    word += data->eventLength + 1;
+  while( nextWord < nFIFOWords ){
+    ProcessSingleData();
+    if( verbose >= 1 ) data->Print(0);
+    if( verbose >= 3 ) data->Print(1); /// print trace
   }
-
+  
 }
 
 void Pixie16::GetTrace(unsigned short modID, unsigned short ch){
@@ -322,33 +372,77 @@ void Pixie16::GetBaseLines(unsigned short modID, unsigned short ch){
   
 }
 
-void Pixie16::GetDigitizerSettings(unsigned short modID){
-  
-  printf("=========== Digitizer setting for module-%d\n", modID);
-  
+unsigned int Pixie16::GetDigitizerSetting(std::string parName, unsigned short modID, bool verbose){
   unsigned int ParData;
-  retval = Pixie16ReadSglModPar ((char *)"MODULE_NUMBER",        &ParData, modID); printf("             module number: %d \n", ParData);
-  retval = Pixie16ReadSglModPar ((char *)"CrateID",              &ParData, modID); printf("               Crate modID: %d \n", ParData);
-  retval = Pixie16ReadSglModPar ((char *)"SlotID",               &ParData, modID); printf("                Slot modID: %d \n", ParData);
-  retval = Pixie16ReadSglModPar ((char *)"ModID",                &ParData, modID); printf("                 Mod modID: %d \n", ParData);
-  ///retval = Pixie16ReadSglModPar ((char *)"MODULE_CSRA",          &ParData, modID); printf("channel control registor A: %X \n", ParData);
-  retval = Pixie16ReadSglModPar ((char *)"MODULE_CSRB",          &ParData, modID); printf("channel control registor B: %X \n", ParData);
-  retval = Pixie16ReadSglModPar ((char *)"MODULE_FORMAT",        &ParData, modID); printf("                    format: %d \n", ParData);
-  retval = Pixie16ReadSglModPar ((char *)"MAX_EVENTS",           &ParData, modID); printf("                max events: %d \n", ParData);
-  retval = Pixie16ReadSglModPar ((char *)"SYNCH_WAIT",           &ParData, modID); printf("               syn ch wait: %d \n", ParData);
-  retval = Pixie16ReadSglModPar ((char *)"IN_SYNCH",             &ParData, modID); printf("                 in syn ch: %d \n", ParData);
-  retval = Pixie16ReadSglModPar ((char *)"SLOW_FILTER_RANGE",    &ParData, modID); printf("         slow filter range: %d \n", ParData);
-  retval = Pixie16ReadSglModPar ((char *)"FAST_FILTER_RANGE",    &ParData, modID); printf("         fast filter range: %d \n", ParData);
-  retval = Pixie16ReadSglModPar ((char *)"FastTrigBackplaneEna", &ParData, modID); printf("fast trig Backplane enable: %X \n", ParData);
-  retval = Pixie16ReadSglModPar ((char *)"TrigConfig0",          &ParData, modID); printf("             Trig config 0: %X \n", ParData);
-  retval = Pixie16ReadSglModPar ((char *)"TrigConfig1",          &ParData, modID); printf("             Trig config 1: %X \n", ParData);
-  retval = Pixie16ReadSglModPar ((char *)"TrigConfig2",          &ParData, modID); printf("             Trig config 2: %X \n", ParData);
-  retval = Pixie16ReadSglModPar ((char *)"TrigConfig3",          &ParData, modID); printf("             Trig config 3: %X \n", ParData);
-  retval = Pixie16ReadSglModPar ((char *)"HOST_RT_PRESET",       &ParData, modID); printf("      Host run time preset: %d \n", ParData);
+  retval = Pixie16ReadSglModPar (const_cast<char*> (parName.c_str()), &ParData, modID); 
+  if( CheckError("Pixie16ReadSglModPar::"+parName) < 0 ) return -404;
   
-  if( CheckError("GetDigitizerSettings") < 0 ) return;
+  if( verbose ){
+    if( parName == "MODULE_CSRA"  || parName == "FastTrigBackplaneEna" || parName == "TrigConfig0" || parName == "TrigConfig1" || parName == "TrigConfig2" || parName == "TrigConfig3" ){
+      printf("READ | Mod : %2d, %20s = %X\n", modID, parName.c_str(), ParData);
+    }else if(parName == "MODULE_CSRB"){
+      printf("READ | Mod : %2d, %20s = %X\n", modID, parName.c_str(), ParData);
+      printf("---------------------------------------------------------------------------\n");
+      printf(     "                                 32  28  24  20  16  12   8   4   0\n");
+      printf(     "                                  |   |   |   |   |   |   |   |   |\n");
+      std::cout <<"         Module Configuration : 0xb" << std::bitset<32>(ParData) << std::endl;    
+      printf(" wired-OR trigger lines to backplane to pullup resistor (bit:  0) : %s \n", ParData & MOD_CSRB_BIT::WIRED_OR_TRIGGER_TO_PULLUP_RESIST ? "Yes" : "No");
+      printf("                                          Direct module (bit:  4) : %s \n", ParData & MOD_CSRB_BIT::DIRECT_MODULUE ? "Yes" : "No");
+      printf("                                  Chassis Master module (bit:  6) : %s \n", ParData & MOD_CSRB_BIT::CHASSIS_MASTER ? "\033[1;33mYes\033[m" : "\033[1;31mNo\033[m");
+      printf("                         Use Global Fast Trigger Source (bit:  7) : %s \n", ParData & MOD_CSRB_BIT::GLOBAL_FAST_TRIGGER ? "Yes" : "No");
+      printf("                            Use external trigger source (bit:  8) : %s \n", ParData & MOD_CSRB_BIT::EXTERNAL_TRIGGER ? "Yes" : "No");
+      printf("                        Control external INHIBIT signal (bit: 10) : %s \n", ParData & MOD_CSRB_BIT::USE_INHIBIT ? "INHIBIT" : "not INHIBIT");
+      printf("       distribute clock and triggers in multiple crates (bit: 11) : %s \n", ParData & MOD_CSRB_BIT::DISTRIBUTE_CLOCK ? "multiple crates" : "single crate");
+      printf("                                         Sort Timestamp (bit: 12) : %s \n", ParData & MOD_CSRB_BIT::SORT_TIMESTAMP ? "\033[1;33mYes\033[m" : "\033[1;31mNo\033[m");
+      printf("        Enable connection of fast triggers to backplane (bit: 13) : %s \n", ParData & MOD_CSRB_BIT::FAST_TRIGGER_TO_BACKPLANE ? "enable" : "disable");
+      printf("---------------------------------------------------------------------------\n");
+    }else if(parName == "SYNCH_WAIT"){
+      printf("READ | Mod : %2d, %20s = %d (%s)\n", modID, parName.c_str(), ParData, ParData ? "simultaneously" : "not simultaneously");      
+    }else if(parName == "IN_SYNCH"){
+      printf("READ | Mod : %2d, %20s = %d (%s)\n", modID, parName.c_str(), ParData, ParData ? "not simultaneously" : "simultaneously");      
+    }else if(parName == "HOST_RT_PRESET"){
+      printf("READ | Mod : %2d, %20s = %f sec\n", modID, parName.c_str(), IEEEFloating2Decimal(ParData));      
+    }else{
+      printf("READ | Mod : %2d, %20s = %d\n", modID, parName.c_str(), ParData);
+    }
+  }
+  
+  return ParData;
 }
 
+
+void Pixie16::PrintDigitizerSettings(unsigned short modID){
+  
+  printf("############################################### Digitizer setting for module-%d\n", modID);
+
+  ///GetDigitizerSetting("MODULE_NUMBER",        modID, true);
+  ///GetDigitizerSetting("ModID",                modID, true);
+  ///GetDigitizerSetting("MODULE_FORMAT",        modID, true);
+  
+
+  ///GetDigitizerSetting("MODULE_CSRA",          modID, true);
+  ///GetDigitizerSetting("MAX_EVENTS",           modID, true);
+  GetDigitizerSetting("CrateID",              modID, true);
+  GetDigitizerSetting("SlotID",               modID, true);
+  GetDigitizerSetting("SYNCH_WAIT",           modID, true);
+  GetDigitizerSetting("IN_SYNCH",             modID, true);
+  GetDigitizerSetting("SLOW_FILTER_RANGE",    modID, true);
+  GetDigitizerSetting("FAST_FILTER_RANGE",    modID, true);
+  GetDigitizerSetting("FastTrigBackplaneEna", modID, true);
+  GetDigitizerSetting("TrigConfig0",          modID, true);
+  GetDigitizerSetting("TrigConfig1",          modID, true);
+  GetDigitizerSetting("TrigConfig2",          modID, true);
+  GetDigitizerSetting("TrigConfig3",          modID, true);
+  GetDigitizerSetting("HOST_RT_PRESET",       modID, true);
+  GetDigitizerSetting("MODULE_CSRB",          modID, true);
+  
+}
+
+void Pixie16::SetDigitizerSetting(std::string parName, unsigned int val, unsigned short modID, bool verbose){
+  retval = Pixie16WriteSglModPar( const_cast<char*> (parName.c_str()), val, modID);
+  if( CheckError("Pixie16WriteSglModPar::"+parName) < 0 ) return;
+  if( verbose ) GetDigitizerSetting(parName, modID, verbose);
+}
 
 double Pixie16::GetChannelSetting(std::string parName, unsigned short modID, unsigned short ch, bool verbose){
   
@@ -364,14 +458,14 @@ double Pixie16::GetChannelSetting(std::string parName, unsigned short modID, uns
     }else if( parName == "BLCUT" ) {
       printf("READ | Mod : %2d, CH: %2d, %18s = %5d \n", modID, ch, parName.c_str(), (int) ParData);
     }else if ( parName == "CHANNEL_CSRA" || parName == "CHANNEL_CSRB" || parName == "MultiplicityMaskL" || parName == "MultiplicityMaskH"){
+      if( parName == "CHANNEL_CSRA" ) printf("---------------------------------------------------------------------------\n");
       printf("READ | Mod : %2d, CH: %2d, %18s = %X\n", modID, ch, parName.c_str(), (int) ParData);
       printf(     "                                 32  28  24  20  16  12   8   4   0\n");
       printf(     "                                  |   |   |   |   |   |   |   |   |\n");
-      std::cout <<"         Module Configuration : 0xb" << std::bitset<32>(ParData) << std::endl;     
+      std::cout <<"        Channel Configuration : 0xb" << std::bitset<32>(ParData) << std::endl;     
       
       if( parName == "CHANNEL_CSRA" ){
         int CSRA = (int) ParData;
-        printf("---------------------------------------------------------------------------\n");
         printf("                                 fast trigger selection (bit:  0) : %s \n", CSRA & CSRA_BIT::FAST_TRIGGER ? "external" : "internal");
         printf("                     module validation signal selection (bit:  1) : %s \n", CSRA & CSRA_BIT::M_VALIDATION ? "module gate" : "global gate");
         printf("                                         channel enable (bit:  2) : %s \n", CSRA & CSRA_BIT::ENABLE_CHANNEL ? "\033[1;33mYes\033[m" : "\033[1;31mNo\033[m");
@@ -418,7 +512,7 @@ unsigned short Pixie16::GetCSRA(int bitwise,  unsigned short modID, unsigned sho
 
 void Pixie16::PrintChannelAllSettings(unsigned short modID, unsigned short ch){
   
-  printf("===================== Channel setting. Mod-%d CH-%02d\n", modID, ch);
+  printf("######################################################## Channel setting. Mod-%d CH-%02d\n", modID, ch);
   GetChannelSetting("TRIGGER_RISETIME",   modID, ch, true); 
   GetChannelSetting("TRIGGER_FLATTOP",    modID, ch, true); 
   GetChannelSetting("TRIGGER_THRESHOLD",  modID, ch, true); 
@@ -433,7 +527,6 @@ void Pixie16::PrintChannelAllSettings(unsigned short modID, unsigned short ch){
   GetChannelSetting("BASELINE_AVERAGE",   modID, ch, true); 
   GetChannelSetting("BLCUT",              modID, ch, true); 
   GetChannelSetting("EMIN",               modID, ch, true); 
-  GetChannelSetting("CHANNEL_CSRA",       modID, ch, true); 
   ///GetChannelSetting("CHANNEL_CSRB",       modID, ch, true); //CSRB is reserved to be zero
   GetChannelSetting("QDCLen0",            modID, ch, true); 
   GetChannelSetting("QDCLen1",            modID, ch, true); 
@@ -445,19 +538,22 @@ void Pixie16::PrintChannelAllSettings(unsigned short modID, unsigned short ch){
   GetChannelSetting("QDCLen7",            modID, ch, true); 
   GetChannelSetting("MultiplicityMaskL",  modID, ch, true); 
   GetChannelSetting("MultiplicityMaskH",  modID, ch, true); 
+  GetChannelSetting("CHANNEL_CSRA",       modID, ch, true); 
   printf("=====================================\n");
  }
 
 void Pixie16::PrintChannelsMainSettings(unsigned short modID){
-  
-  printf(" ch | En  | Trig_L | Trig_G | Threshold | Energy_L | Energy_G | Tau   | Trace   | Trace_d | Voff | BL \n");
-  printf("----+-----+--------+--------+-----------+----------+----------+-------+------  -+---------+------+------ \n");
+
+  printf("====+=====+========+========+===========+==========+==========+==========+========+========+=========+======+====== \n");  
+  printf(" ch | En  | Trig_L | Trig_G | Threshold | Polarity | Energy_L | Energy_G | Tau    | Trace  | Trace_d | Voff | BL \n");
+  printf("----+-----+--------+--------+-----------+----------+----------+----------+--------+--------+---------+------+------ \n");
   for( int ch = 0; ch < 16; ch ++){
     printf(" %2d |", ch);
     printf(" %3s |", GetChannleOnOff(modID, ch) ? "On" : "Off" );
     printf(" %6.2f |", GetChannelTriggerRiseTime(modID, ch));
     printf(" %6.2f |", GetChannelTriggerFlatTop(modID, ch));
     printf(" %9.2f |", GetChannelTriggerThreshold(modID, ch));
+    printf(" %8s |", GetChannelPolarity(modID, ch) ? "Pos" : "Neg");
     printf(" %8.2f |", GetChannelEnergyRiseTime(modID, ch));
     printf(" %8.2f |", GetChannelEnergyFlatTop(modID, ch));
     printf(" %5.2f |", GetChannelEnergyTau(modID, ch));
@@ -469,12 +565,12 @@ void Pixie16::PrintChannelsMainSettings(unsigned short modID){
       printf(" %7s |", "Off");
     }    
     printf(" %4.2f |", GetChannelVOffset(modID, ch));
-    printf(" %4.2f \n", GetChannelBaseLinePrecent(modID, ch));
+    printf(" %4.2f %% \n", GetChannelBaseLinePrecent(modID, ch));
   }
 }
 
 
-void Pixie16::WriteChannelSetting(std::string parName, double val, unsigned short modID, unsigned short ch, bool verbose ){
+void Pixie16::SetChannelSetting(std::string parName, double val, unsigned short modID, unsigned short ch, bool verbose ){
   
   retval = Pixie16WriteSglChanPar( const_cast<char*> (parName.c_str()), val, modID, ch);
   if( CheckError("Pixie16WriteSglChanPar::"+parName) < 0 ) return;
@@ -489,7 +585,7 @@ void Pixie16::SwitchCSRA(int bitwise, unsigned short modID, unsigned short ch){
   if( CheckError("Pixie16ReadSglChanPar::CHANNEL_CSRA") < 0 ) return;
   
   ParData = ((int)ParData) ^ bitwise; 
-  WriteChannelSetting("CHANNEL_CSRA", ParData, modID, ch);
+  SetChannelSetting("CHANNEL_CSRA", ParData, modID, ch);
   
 }
 
@@ -523,7 +619,7 @@ void Pixie16::SetCSRABit(int bitwise, unsigned short val, unsigned short modID, 
   if( bitwise == CSRA_BIT::MO_VETO                ) haha = val << 20;
   if( bitwise == CSRA_BIT::EXT_TIMESTAMP          ) haha = val << 21;
   
-  WriteChannelSetting("CHANNEL_CSRA", (temp | haha), modID, ch);
+  SetChannelSetting("CHANNEL_CSRA", (temp | haha), modID, ch);
   
 }
 
@@ -540,14 +636,20 @@ void Pixie16::PrintStatistics(unsigned short modID){
   
   GetStatitics(modID);
   if( retval >= 0 ){
-    printf(" Real (or RUN) Time : %9.3f sec \n", Pixie16ComputeRealTime (Statistics, modID));
-    printf("  ch | live time (sec) | input count rate | output count rate \n");
-    printf("-----+-----------------+------------------+-------------------\n");
+    double realTime = Pixie16ComputeRealTime (Statistics, modID);
+    printf(" Real (or RUN) Time : %9.3f sec \n", realTime);
+    printf("  ch | live time (sec) | input count rate | output count rate | trigger | events \n");
+    printf("-----+-----------------+------------------+-------------------+---------+--------\n");
     for( int ch = 0; ch < 16; ch ++){
       printf("  %2d |", ch);
-      printf(" %15.4f |", Pixie16ComputeLiveTime(Statistics, modID, ch));
-      printf(" %16.4f |", Pixie16ComputeInputCountRate(Statistics, modID, ch));
-      printf(" %17.4f \n", Pixie16ComputeOutputCountRate(Statistics, modID, ch));
+      double liveTime = Pixie16ComputeLiveTime(Statistics, modID, ch);
+      double ICR = Pixie16ComputeInputCountRate(Statistics, modID, ch);
+      double OCR = Pixie16ComputeOutputCountRate(Statistics, modID, ch);
+      printf(" %15.4f |", liveTime);
+      printf(" %16.4f |", ICR);
+      printf(" %17.4f |", OCR);
+      printf(" %7d |", (int) (ICR * liveTime) );
+      printf(" %7d \n", (int) (OCR * realTime) );
     }
   }
 }
@@ -592,14 +694,26 @@ void Pixie16::SaveSettings(std::string fileName){
   }
 }
 
-/*
-void Pixie16::SaveData(char * fileName, unsigned short isEndOfRun){
 
-  retval = Pixie16SaveExternalFIFODataToFile(fileName, &nFIFOWords, 0, isEndOfRun);
-  if( CheckError("Pixie16SaveExternalFIFODataToFile") < 0 ) return;
+
+void Pixie16::OpenFile(std::string fileName, bool append){
   
-}*/
+  if( !outFile.is_open() ) {
+    if( append ) {
+      outFile.open(fileName, std::ios::out | std::ios::binary | std::ios::app);
+    }else{
+      outFile.open(fileName, std::ios::out | std::ios::binary);
+    }
+  }
+}
 
+void Pixie16::SaveData(){
+  if( outFile.is_open() ) outFile.write(reinterpret_cast<char*>(ExtFIFO_Data), nFIFOWords * sizeof(uint32_t));
+}
+
+void Pixie16::CloseFile(){
+  outFile.close();
+}
   
 #endif
 

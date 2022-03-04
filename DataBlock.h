@@ -30,7 +30,7 @@ public:
   int           QDCsum[8];
   
   unsigned long long     eventID;
-  unsigned short trace[1024];
+  unsigned short trace[4000];
   
   DataBlock(){
     Clear();

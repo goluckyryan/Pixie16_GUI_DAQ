@@ -14,8 +14,7 @@
 #include "TString.h"
 #include "TBenchmark.h"
 
-#include "../mapping.h"
-#include "../armory/DataBlock.h"
+#include "DataBlock.h"
 
 #define MAX_CRATES 2
 #define MAX_BOARDS_PER_CRATE 13
@@ -165,8 +164,8 @@ int evtReader::ReadBlock(int opt = 0){
     data->trace_length = (header[3] >> 16) & 0x7FFF;
     data->trace_out_of_range =  header[3] >> 31;
 
-    data->id = data->crate*MAX_BOARDS_PER_CRATE*MAX_CHANNELS_PER_BOARD + (data->slot-BOARD_START)*MAX_CHANNELS_PER_BOARD + data->ch;
-    data->detID = mapping[data->id];
+    //data->id = data->crate*MAX_BOARDS_PER_CRATE*MAX_CHANNELS_PER_BOARD + (data->slot-BOARD_START)*MAX_CHANNELS_PER_BOARD + data->ch;
+    //data->detID = mapping[data->id];
 
     data->ClearQDC();
 

@@ -2,7 +2,8 @@
 #define PIXIE16_H
 
 #include <string>
-
+#include <fstream>
+#include "pixie16/pixie16.h"
 #include "DataBlock.h"
 
 enum CSRA_BIT{
@@ -27,6 +28,18 @@ enum CSRA_BIT{
   CH_VETO                = 0x00080000,
   MO_VETO                = 0x00100000,
   EXT_TIMESTAMP          = 0x00200000,
+};
+
+enum MOD_CSRB_BIT{
+  WIRED_OR_TRIGGER_TO_PULLUP_RESIST  = 0x00000001,
+  DIRECT_MODULUE                     = 0x00000010,
+  CHASSIS_MASTER                     = 0x00000040,
+  GLOBAL_FAST_TRIGGER                = 0x00000080,
+  EXTERNAL_TRIGGER                   = 0x00000100,
+  USE_INHIBIT                        = 0x00000400,
+  DISTRIBUTE_CLOCK                   = 0x00000800,
+  SORT_TIMESTAMP                     = 0x00001000,
+  FAST_TRIGGER_TO_BACKPLANE          = 0x00002000,
 };
 
 class Pixie16 {
@@ -56,6 +69,9 @@ private:
   unsigned int * Statistics;
   
   DataBlock * data;
+  unsigned int nextWord;
+  
+  std::ofstream outFile;
 
   /***
   struct channelSetting{
@@ -90,11 +106,20 @@ public:
   
   void GetDigitizerInfo(unsigned short modID);
   void BootDigitizers();
-  
+    
+  void AdjustOffset();
   
   ///========================= Setting
 
-  void GetDigitizerSettings(unsigned short modID);
+  unsigned int GetDigitizerSetting(std::string parName, unsigned short modID, bool verbose = false);
+
+  void PrintDigitizerSettings(unsigned short modID);
+  
+  void SetDigitizerSetting(std::string parName, unsigned int val, unsigned short modID, bool verbose = false);
+  void SetDigitizerSynchWait(unsigned int val, unsigned short modID)              { SetDigitizerSetting("SYNCH_WAIT", val, modID, 1);}
+  void SetDigitizerInSynch(unsigned int val, unsigned short modID)                { SetDigitizerSetting("IN_SYNCH", val, modID, 1);}
+  void SetDigitizerPresetRunTime(double val_in_sec, unsigned short modID)   { SetDigitizerSetting("HOST_RT_PRESET", Decimal2IEEEFloating(val_in_sec), modID, 1);}
+  
   
   double GetChannelSetting(std::string parName, unsigned short modID, unsigned short ch, bool verbose = false);
   double GetChannelTriggerRiseTime (unsigned modID, unsigned short ch){ return GetChannelSetting("TRIGGER_RISETIME", modID, ch); }
@@ -116,23 +141,24 @@ public:
   bool GetChannelPolarity(unsigned short modID, unsigned short ch, bool verbose = false)     {return GetCSRA(CSRA_BIT::POLARITY, modID, ch, verbose);}
   bool GetChannelTraceOnOff(unsigned short modID, unsigned short ch, bool verbose = false)   {return GetCSRA(CSRA_BIT::ENABLE_TRACE, modID, ch, verbose);}
 
-  void WriteChannelSetting(std::string parName, double val, unsigned short modID, unsigned short ch, bool verbose = false);
-  void WriteChannelTriggerRiseTime (double val, unsigned short modID, unsigned short ch){ WriteChannelSetting("TRIGGER_RISETIME",  val, modID, ch, 1);}
-  void WriteChannelTriggerFlatTop  (double val, unsigned short modID, unsigned short ch){ WriteChannelSetting("TRIGGER_FLATTOP",   val, modID, ch, 1);}
-  void WriteChannelTriggerThreshold(double val, unsigned short modID, unsigned short ch){ WriteChannelSetting("TRIGGER_THRESHOLD", val, modID, ch, 1);}
-  void WriteChannelEnergyRiseTime  (double val, unsigned short modID, unsigned short ch){ WriteChannelSetting("ENERGY_RISETIME",   val, modID, ch, 1);}
-  void WriteChannelEnergyFlatTop   (double val, unsigned short modID, unsigned short ch){ WriteChannelSetting("ENERGY_FLATTOP",    val, modID, ch, 1);}
-  void WriteChannelEnergyTau       (double val, unsigned short modID, unsigned short ch){ WriteChannelSetting("TAU",               val, modID, ch, 1);}
-  void WriteChannelTraceLenght     (double val, unsigned short modID, unsigned short ch){ WriteChannelSetting("TRACE_LENGTH",      val, modID, ch, 1);}
-  void WriteChannelTraceDelay      (double val, unsigned short modID, unsigned short ch){ WriteChannelSetting("TRACE_DELAY",       val, modID, ch, 1);}
-  void WriteChannelBaseLinePrecent (double val, unsigned short modID, unsigned short ch){ WriteChannelSetting("BASELINE_PERCENT",  val, modID, ch, 1);}
+  void SetChannelSetting(std::string parName, double val, unsigned short modID, unsigned short ch, bool verbose = false);
+  void SetChannelTriggerRiseTime (double val, unsigned short modID, unsigned short ch){ SetChannelSetting("TRIGGER_RISETIME",  val, modID, ch, 1);}
+  void SetChannelTriggerFlatTop  (double val, unsigned short modID, unsigned short ch){ SetChannelSetting("TRIGGER_FLATTOP",   val, modID, ch, 1);}
+  void SetChannelTriggerThreshold(double val, unsigned short modID, unsigned short ch){ SetChannelSetting("TRIGGER_THRESHOLD", val, modID, ch, 1);}
+  void SetChannelEnergyRiseTime  (double val, unsigned short modID, unsigned short ch){ SetChannelSetting("ENERGY_RISETIME",   val, modID, ch, 1);}
+  void SetChannelEnergyFlatTop   (double val, unsigned short modID, unsigned short ch){ SetChannelSetting("ENERGY_FLATTOP",    val, modID, ch, 1);}
+  void SetChannelEnergyTau       (double val, unsigned short modID, unsigned short ch){ SetChannelSetting("TAU",               val, modID, ch, 1);}
+  void SetChannelTraceLenght     (double val, unsigned short modID, unsigned short ch){ SetChannelSetting("TRACE_LENGTH",      val, modID, ch, 1);}
+  void SetChannelTraceDelay      (double val, unsigned short modID, unsigned short ch){ SetChannelSetting("TRACE_DELAY",       val, modID, ch, 1);}
+  void SetChannelBaseLinePrecent (double val, unsigned short modID, unsigned short ch){ SetChannelSetting("BASELINE_PERCENT",  val, modID, ch, 1);}
+  void SetChannelVOffset         (double val, unsigned short modID, unsigned short ch){ SetChannelSetting("VOFFSET",           val, modID, ch, 1);}
   
   void SwitchCSRA(int bitwise, unsigned short modID, unsigned short ch);
   void SetCSRABit(int bitwise, unsigned short val, unsigned short modID, unsigned short ch);
   
-  void SetChannleOnOff(bool enable, unsigned short modID, unsigned short ch)        { SetCSRABit(CSRA_BIT::ENABLE_CHANNEL, enable, modID, ch); }
-  void SetPositivePolarity(bool positive, unsigned short modID, unsigned short ch)  { SetCSRABit(CSRA_BIT::POLARITY, positive, modID, ch); }
-  void SetTraceOnOff(bool enable, unsigned short modID, unsigned short ch)          { SetCSRABit(CSRA_BIT::ENABLE_TRACE, enable, modID, ch); }
+  void SetChannelOnOff(bool enable, unsigned short modID, unsigned short ch)        { SetCSRABit(CSRA_BIT::ENABLE_CHANNEL, enable, modID, ch); }
+  void SetChannelPositivePolarity(bool positive, unsigned short modID, unsigned short ch)  { SetCSRABit(CSRA_BIT::POLARITY, positive, modID, ch); }
+  void SetChannelTraceOnOff(bool enable, unsigned short modID, unsigned short ch)          { SetCSRABit(CSRA_BIT::ENABLE_TRACE, enable, modID, ch); }
   
   void SaveSettings(std::string fileName);
   
@@ -152,7 +178,18 @@ public:
   void GetBaseLines(unsigned short modID, unsigned short ch);
   
   void ReadData(unsigned short modID);
-  void PrintData();
+  
+  void PrintExtFIFOData(int a) { printf("%5d-%5d | %08X  %08X  %08X  %08X \n", a, a+3, ExtFIFO_Data[a], ExtFIFO_Data[a+1], ExtFIFO_Data[a+2], ExtFIFO_Data[a+3]);} 
+  unsigned int GetnFIFOWords() {return nFIFOWords;}
+  unsigned int GetNextWord()   {return nextWord;}
+  DataBlock * GetData()        {return data;}
+  void ProcessSingleData();
+  void ProcessData(int verbose = 0);
+  
+  void OpenFile(std::string fileName, bool append);
+  void SaveData();
+  void CloseFile();
+  
   
   //void SaveData(char * fileName, unsigned short isEndOfRun);
   

@@ -36,7 +36,7 @@ example.o : example.cpp
 	$(CC) $(CFLAGS) $(INCFLAGS)  example.cpp 
 
 test : test.o Pixie16Class.o
-	$(CC) $(INCFLAGS) test.o Pixie16Class.o  $(LIBS) -o test
+	$(CC) $(INCFLAGS) test.o Pixie16Class.o  $(LIBS) -o test  $(ROOT_FLAG)
 	
 test.o : test.cpp
 	$(CC) $(CFLAGS) $(INCFLAGS)  test.cpp $(ROOT_FLAG)

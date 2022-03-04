@@ -271,6 +271,24 @@ bool execute_list_mode_run(const configuration& cfg, const double& runtime_in_se
     std::cout << LOG("INFO") << "Starting list mode data run for " << runtime_in_seconds << " s."
               << std::endl;
 
+    std::cout << LOG("INFO") << "Calling Pixie16WriteSglModPar to read SYNCH_WAIT in Module 0."
+              << std::endl;
+    unsigned int parData;
+    if (!verify_api_return_value(Pixie16ReadSglModPar("SYNCH_WAIT", &parData, 0),
+                                 "Pixie16ReadSglModPar - SYNC_WAIT"))
+        return false;
+    std::cout << LOG("INFO") << "SYNCH_WAIT in Module 0. = " << parData
+              << std::endl;        
+    
+
+    std::cout << LOG("INFO") << "Calling Pixie16ReadSglModPar to read IN_SYNCH in Module 0."
+              << std::endl;
+    if (!verify_api_return_value(Pixie16ReadSglModPar("IN_SYNCH", &parData, 0),
+                                 "Pixie16ReadSglModPar - IN_SYNC"))
+        return false;
+    std::cout << LOG("INFO") << "IN_SYNCH in Module 0. = " << parData
+              << std::endl;
+
     std::cout << LOG("INFO") << "Calling Pixie16WriteSglModPar to write SYNCH_WAIT = 1 in Module 0."
               << std::endl;
     if (!verify_api_return_value(Pixie16WriteSglModPar("SYNCH_WAIT", 1, 0),
@@ -302,7 +320,8 @@ bool execute_list_mode_run(const configuration& cfg, const double& runtime_in_se
     while (std::chrono::duration_cast<std::chrono::duration<double>>(
                std::chrono::steady_clock::now() - run_start_time)
                .count() < runtime_in_seconds) {
-        for (unsigned short mod_num = 0; mod_num < cfg.num_modules(); mod_num++) {
+       // for (unsigned short mod_num = 0; mod_num < cfg.num_modules(); mod_num++) {
+        for (unsigned short mod_num = 0; mod_num < 1; mod_num++) {
             if (Pixie16CheckRunStatus(mod_num) == 1) {
                 if (!verify_api_return_value(
                         Pixie16CheckExternalFIFOStatus(&num_fifo_words, mod_num),
@@ -411,15 +430,15 @@ bool execute_mca_run(const unsigned int& mod, const double& runtime_in_seconds) 
             "Pixie16WriteSglModPar - HOST_RT_PRESET"))
         return false;
 
-    std::cout << LOG("INFO") << "Calling Pixie16WriteSglModPar to write SYNCH_WAIT = 0 in Module 0."
+    std::cout << LOG("INFO") << "Calling Pixie16WriteSglModPar to write SYNCH_WAIT = 1 in Module 0."
               << std::endl;
-    if (!verify_api_return_value(Pixie16WriteSglModPar("SYNCH_WAIT", 0, mod),
+    if (!verify_api_return_value(Pixie16WriteSglModPar("SYNCH_WAIT", 1, mod),
                                  "Pixie16WriteSglModPar - SYNC_WAIT"))
         return false;
 
-    std::cout << LOG("INFO") << "Calling Pixie16WriteSglModPar to write IN_SYNCH  = 1 in Module 0."
+    std::cout << LOG("INFO") << "Calling Pixie16WriteSglModPar to write IN_SYNCH  = 0 in Module 0."
               << std::endl;
-    if (!verify_api_return_value(Pixie16WriteSglModPar("IN_SYNCH", 1, mod),
+    if (!verify_api_return_value(Pixie16WriteSglModPar("IN_SYNCH", 0, mod),
                                  "Pixie16WriteSglModPar - IN_SYNC"))
         return false;
 
