@@ -13,7 +13,6 @@
 
 #include "Pixie16Class.h"
 
-
 #include "TROOT.h"
 #include "TSystem.h"
 #include "TStyle.h"
@@ -77,7 +76,7 @@ int main(int argc, char *argv[]){
   TH1F * hch = new TH1F("hch", "channel", 16, 0, 16);
   TH1F * hE = new TH1F("hE", "energy", 400, 0, 30000);
   TGraph * gTrace = new TGraph();
-  gTrace->GetXaxis()->SetTitle("time [ch]");
+  gTrace->GetXaxis()->SetTitle("time [ch = 4 ns]");
 
   
   //pixie->SetDigitizerPresetRunTime(100000, 0);
@@ -95,7 +94,7 @@ int main(int argc, char *argv[]){
   */
 
   int ch = 6;
-  double time = 2.0; ///sec
+  double time = 1.0; ///sec
   
   /*
   for( int i = 0; i < 16; i++){
@@ -109,30 +108,32 @@ int main(int argc, char *argv[]){
   
   
   //pixie->SetChannelEnergyRiseTime(2, 0, ch);
-  //pixie->SetChannelTriggerThreshold(300, 0, ch);
+  pixie->SetChannelTriggerThreshold(300, 0, ch);
   //pixie->SetChannelEnergyTau(50, 0, ch);
   //pixie->SetChannelOnOff(true, 0, ch);
   //pixie->SetChannelPositivePolarity(true, 0, ch);
   //pixie->SetChannelTraceOnOff(true, 0, ch);
-  //pixie->SetChannelBaseLinePrecent(10, 0, ch);
+  pixie->SetChannelBaseLinePrecent(90, 0, ch);
   //pixie->SetChannelVOffset(0.0, 0, ch);
   //pixie->SetChannelTraceLenght(10, 0, ch);
   //pixie->SetChannelTraceDelay(2, 0, ch);
-  //pixie->SaveSettings("test_ryan.set");
+  pixie->SetChannelGain(1, 0, ch);
+  pixie->SaveSettings("test_ryan.set");
   
   
   pixie->PrintChannelAllSettings(0, ch);
   
   pixie->PrintChannelsMainSettings(0);
   
-  
-  //pixie->CaptureADCTrace(0, ch);
-  //unsigned short * haha =  pixie->GetADCTrace();
-  //for( int i = 0 ; i < pixie->GetADCTraceLength(); i++){
-  //  gTrace->SetPoint(i, i, haha[i]);
-  //}
-  //canvas->cd(3); gTrace->Draw("APL");
-  
+  /*
+  pixie->CaptureADCTrace(0, ch);
+  unsigned short * haha =  pixie->GetADCTrace();
+  for( int i = 0 ; i < pixie->GetADCTraceLength(); i++){
+    gTrace->SetPoint(i, i, haha[i]);
+  }
+  gTrace->GetXaxis()->SetTitle("time [us]");
+  canvas->cd(3); gTrace->Draw("APL");
+  */
   
   //pixie->CaptureBaseLine(0, ch);
   //double * baseline = pixie->GetBasline();
@@ -158,27 +159,33 @@ int main(int argc, char *argv[]){
     
     while( pixie->GetNextWord() < pixie->GetnFIFOWords() ){
 
+      //if( data->eventID %100 == 99 ) pixie->PrintExtFIFOWords();
       bool breakFlag = pixie->ProcessSingleData();
 
-      data->Print(0);
-      printf("--------------next  word : %d (%d) | event lenght : %d \n", pixie->GetNextWord(), pixie->GetnFIFOWords(),  data->eventLength);
+      //data->Print(0);
+      //printf("--------------next  word : %d (%d) | event lenght : %d \n", pixie->GetNextWord(), pixie->GetnFIFOWords(),  data->eventLength);
       
         hch->Fill( data->ch);
         hE->Fill( data->energy );
-        if( data->trace_length > 0 ) {
-          for( int i = 0 ; i < data->trace_length; i++){
-            gTrace->SetPoint(i, i, data->trace[i]);
+        
+        if( data->eventID %10 == 0 ){
+          if( data->trace_length > 0 ) {
+            for( int i = 0 ; i < data->trace_length; i++){
+              gTrace->SetPoint(i, i, data->trace[i]);
+            }
+            gTrace->GetYaxis()->SetRangeUser(0, 5000);
+            canvas->cd(3); gTrace->Draw("APL");        
           }
-          gTrace->GetYaxis()->SetRangeUser(0, 5000);
-          canvas->cd(3); gTrace->Draw("APL");
         }
         
-        canvas->cd(1); hch->Draw();
-        canvas->cd(2); hE->Draw();
-        canvas->Modified();
-        canvas->Update();
-        gSystem->ProcessEvents();
-      
+        if( data->eventID %100 == 0 ){
+          //data->Print(0);
+          canvas->cd(1); hch->Draw();
+          canvas->cd(2); hE->Draw();
+          canvas->Modified();
+          canvas->Update();
+          gSystem->ProcessEvents();
+        }
         if( breakFlag ) break;
     }
     

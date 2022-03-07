@@ -1,10 +1,10 @@
 #ifndef PIXIE16_CPP
 #define PIXIE16_CPP
 
-
-//#include "pixie16app_export.h"
-//#include "pixie16sys_export.h"
-//#include "def21160.h"
+///legacy pixie libaray
+///#include "pixie16app_export.h"
+///#include "pixie16sys_export.h"
+///#include "def21160.h"
 
 #include <bitset>
 #include <fstream>
@@ -102,10 +102,11 @@ bool Pixie16::LoadConfigFile(std::string fileName){
   
   //DSPParFile         [0] = (char *)"/usr/opt/Pixie16/Pixie-16_FSU_Custom_Firmware_06022020/Configuration/Pixie16_FSU_Sample_Setup.set";
   DSPParFile         [0] = (char *)"/home/ryan/Pixie16/ryan/test_ryan.set";
-  //DSPParFile         [0] = (char *)"/home/ryan/Pixie16/ryan/Pixie16_FSU_Sample_Setup.set";
+  //DSPParFile         [0] = (char *)"/home/ryan/Pixie16/ryan/Pixie16_example_legacy.set";
 
   BootPattern = 0x7F;
   
+  printf("########################## \n");
   printf("Number of Module : %d \n", NumModules);
   printf("Slot Map : "); for( int i = 0; i < NumModules ; i++) printf("%d\t", PXISlotMap[i]);
   printf("\n");
@@ -449,7 +450,7 @@ double Pixie16::GetChannelSetting(std::string parName, unsigned short modID, uns
         printf("                                         channel enable (bit:  2) : %s \n", CSRA & CSRA_BIT::ENABLE_CHANNEL ? "\033[1;33mYes\033[m" : "\033[1;31mNo\033[m");
         printf("                    channal validation signal selection (bit:  3) : %s \n", CSRA & CSRA_BIT::C_VALIFATION ? "module gate" : "global gate");
         printf("Block data acquisition if trace or header DPMs are full (bit:  4) : %s \n", CSRA & CSRA_BIT::BLOCK_DAQ_DPM_FULL ? "Yes" : "No");
-        printf("                                        signal polarity (bit:  5) : %s \n", CSRA & CSRA_BIT::POLARITY ? "Positive" : "Negative");
+        printf("                                        signal polarity (bit:  5) : %s \n", CSRA & CSRA_BIT::POLARITY ? "\033[1;33mPositive\033[m" : "\033[1;31mNegative\033[m");
         printf("                                   veto channel trigger (bit:  6) : %s \n", CSRA & CSRA_BIT::VETO_TRIGGER ? "enable" : "disable");
         printf("                                   Enable trace capture (bit:  8) : %s \n", CSRA & CSRA_BIT::ENABLE_TRACE ? "enable" : "disable");
         printf("                                 Enable QDC sum capture (bit:  9) : %s \n", CSRA & CSRA_BIT::ENABLE_QDC ? "enable" : "disable");
@@ -457,7 +458,7 @@ double Pixie16::GetChannelSetting(std::string parName, unsigned short modID, uns
         printf("                     required module validation trigger (bit: 11) : %s \n", CSRA & CSRA_BIT::REQ_M_VALIDATION ? "required" : "not required");
         printf("           Enable capture raw energy sums and baselines (bit: 12) : %s \n", CSRA & CSRA_BIT::CAPTURE_ESUMS_BASELINE ? "enable" : "disable");
         printf("                    required cahnnel validation trigger (bit: 13) : %s \n", CSRA & CSRA_BIT::REQ_C_VALIDATION ? "required" : "not required");
-        printf("                                     Enable input relay (bit: 14) : %s \n", CSRA & CSRA_BIT::INPUT_RELAY ? "enable" : "disable");
+        printf("                              Enable input relay (Gain) (bit: 14) : %s \n", CSRA & CSRA_BIT::INPUT_RELAY ? "\033[1;33mclose (no att.)\033[m" : "\033[1;31mopen (1/4 att.)\033[m");
         printf("                                        Pile-up control (bit: 15-16) : ");
                                   int pileUpVaule = (CSRA & CSRA_BIT::PILEUP);
                                    if( pileUpVaule == 0 ) printf("no energy for pile-up\n");
@@ -522,12 +523,13 @@ void Pixie16::PrintChannelAllSettings(unsigned short modID, unsigned short ch){
 
 void Pixie16::PrintChannelsMainSettings(unsigned short modID){
 
-  printf("====+=====+========+========+===========+==========+==========+==========+========+========+=========+======+====== \n");  
-  printf(" ch | En  | Trig_L | Trig_G | Threshold | Polarity | Energy_L | Energy_G | Tau    | Trace  | Trace_d | Voff | BL \n");
-  printf("----+-----+--------+--------+-----------+----------+----------+----------+--------+--------+---------+------+------ \n");
+  printf("====+=====+======+========+========+===========+==========+==========+==========+========+========+=========+======+====== \n");  
+  printf(" ch | En  | Gain | Trig_L | Trig_G | Threshold | Polarity | Energy_L | Energy_G | Tau    | Trace  | Trace_d | Voff | BL \n");
+  printf("----+-----+------+--------+--------+-----------+----------+----------+----------+--------+--------+---------+------+------ \n");
   for( int ch = 0; ch < 16; ch ++){
     printf(" %2d |", ch);
-    printf(" %3s |", GetChannleOnOff(modID, ch) ? "On" : "Off" );
+    printf(" %3s |", GetChannelOnOff(modID, ch) ? "On" : "Off" );
+    printf(" %3s |", GetChannelGain(modID, ch) ? "x1" : "1/4" );
     printf(" %6.2f |", GetChannelTriggerRiseTime(modID, ch));
     printf(" %6.2f |", GetChannelTriggerFlatTop(modID, ch));
     printf(" %9.2f |", GetChannelTriggerThreshold(modID, ch));

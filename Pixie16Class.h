@@ -114,7 +114,6 @@ public:
   void SetDigitizerInSynch(unsigned int val, unsigned short modID)                { SetDigitizerSetting("IN_SYNCH", val, modID, 1);}
   void SetDigitizerPresetRunTime(double val_in_sec, unsigned short modID)   { SetDigitizerSetting("HOST_RT_PRESET", Decimal2IEEEFloating(val_in_sec), modID, 1);}
   
-  
   double GetChannelSetting(std::string parName, unsigned short modID, unsigned short ch, bool verbose = false);
   double GetChannelTriggerRiseTime (unsigned modID, unsigned short ch){ return GetChannelSetting("TRIGGER_RISETIME", modID, ch); }
   double GetChannelTriggerFlatTop  (unsigned modID, unsigned short ch){ return GetChannelSetting("TRIGGER_FLATTOP", modID, ch); }
@@ -127,13 +126,15 @@ public:
   double GetChannelVOffset         (unsigned modID, unsigned short ch){ return GetChannelSetting("VOFFSET", modID, ch); }  
   double GetChannelBaseLinePrecent (unsigned modID, unsigned short ch){ return GetChannelSetting("BASELINE_PERCENT",   modID, ch);  }  
   
-  void PrintChannelAllSettings(unsigned short modID, unsigned short ch);
-  void PrintChannelsMainSettings(unsigned short modID);
-  
   unsigned short GetCSRA(int bitwise,  unsigned short modID, unsigned short ch, bool verbose = false);
-  bool GetChannleOnOff(unsigned short modID, unsigned short ch, bool verbose = false)        {return GetCSRA(CSRA_BIT::ENABLE_CHANNEL, modID, ch, verbose);}
+  bool GetChannelOnOff(unsigned short modID, unsigned short ch, bool verbose = false)        {return GetCSRA(CSRA_BIT::ENABLE_CHANNEL, modID, ch, verbose);}
   bool GetChannelPolarity(unsigned short modID, unsigned short ch, bool verbose = false)     {return GetCSRA(CSRA_BIT::POLARITY, modID, ch, verbose);}
   bool GetChannelTraceOnOff(unsigned short modID, unsigned short ch, bool verbose = false)   {return GetCSRA(CSRA_BIT::ENABLE_TRACE, modID, ch, verbose);}
+  bool GetChannelGain(unsigned short modID, unsigned short ch, bool verbose = false)         {return GetCSRA(CSRA_BIT::INPUT_RELAY, modID, ch, verbose);}
+
+  void PrintChannelAllSettings(unsigned short modID, unsigned short ch);
+  void PrintChannelsMainSettings(unsigned short modID);
+ 
 
   void SetChannelSetting(std::string parName, double val, unsigned short modID, unsigned short ch, bool verbose = false);
   void SetChannelTriggerRiseTime (double val, unsigned short modID, unsigned short ch){ SetChannelSetting("TRIGGER_RISETIME",  val, modID, ch, 1);}
@@ -150,9 +151,10 @@ public:
   void SwitchCSRA(int bitwise, unsigned short modID, unsigned short ch);
   void SetCSRABit(int bitwise, unsigned short val, unsigned short modID, unsigned short ch);
   
-  void SetChannelOnOff(bool enable, unsigned short modID, unsigned short ch)        { SetCSRABit(CSRA_BIT::ENABLE_CHANNEL, enable, modID, ch); }
+  void SetChannelOnOff(bool enable, unsigned short modID, unsigned short ch)               { SetCSRABit(CSRA_BIT::ENABLE_CHANNEL, enable, modID, ch); }
   void SetChannelPositivePolarity(bool positive, unsigned short modID, unsigned short ch)  { SetCSRABit(CSRA_BIT::POLARITY, positive, modID, ch); }
   void SetChannelTraceOnOff(bool enable, unsigned short modID, unsigned short ch)          { SetCSRABit(CSRA_BIT::ENABLE_TRACE, enable, modID, ch); }
+  void SetChannelGain(bool high, unsigned short modID, unsigned short ch)                  { SetCSRABit(CSRA_BIT::INPUT_RELAY, high, modID, ch); }
   
   void SaveSettings(std::string fileName);
   
@@ -175,6 +177,21 @@ public:
   unsigned int GetNextWord()   {return nextWord;}
   DataBlock *  GetData()       {return data;}
   bool ProcessSingleData();
+  void PrintExtFIFOWords() {
+    unsigned int nWords = (ExtFIFO_Data[nextWord] >> 17) & 0x3FFF;
+    printf("------------------- print dataBlock, nWords = %d\n", nWords);
+    int count = 0;
+    for( unsigned int i = nextWord; i < nextWord + nWords + 10 ; i++){
+      if( i == nextWord + nWords ) printf("===== end of dataBlock\n");
+      if( count % 4 == 3 ){
+        printf("%08X \n", ExtFIFO_Data[i]);
+      }else{
+        printf("%08X ", ExtFIFO_Data[i]);
+      }
+      count ++;
+    }
+    printf("\n------------------- \n");
+  }
   
   void OpenFile(std::string fileName, bool append);
   void SaveData();
