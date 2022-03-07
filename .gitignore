@@ -9,3 +9,6 @@ example
 read-set
 
 *.root
+*.cxx
+*.pcm
+pixieDAQ
