@@ -48,6 +48,8 @@ private:
   unsigned short   NumModules;
   unsigned short * PXISlotMap;
   unsigned short   OfflineMode;
+  
+  unsigned short * ch2ns;
 
   char ** ComFPGAConfigFile;
   char ** SPFPGAConfigFile;
@@ -92,6 +94,8 @@ public:
   
   void GetDigitizerInfo(unsigned short modID);
   void BootDigitizers();
+  
+  unsigned short GetCh2ns(unsigned short modID) {return ch2ns[modID];}
     
   void AdjustOffset();
   void CaptureBaseLine(unsigned short modID, unsigned short ch);

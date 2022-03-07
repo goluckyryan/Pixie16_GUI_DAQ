@@ -62,7 +62,7 @@ Pixie16::~Pixie16(){
   CheckError("Pixie16ExitSystem");
   
   delete PXISlotMap;
-  
+  delete ch2ns;
   delete ComFPGAConfigFile;
   delete SPFPGAConfigFile;
   delete TrigFPGAConfigFile;
@@ -84,6 +84,8 @@ bool Pixie16::LoadConfigFile(std::string fileName){
   NumModules = 1;
   OfflineMode = 0;
   PXISlotMap = new unsigned short[NumModules];
+  
+  ch2ns = new unsigned short[NumModules];
   
   ComFPGAConfigFile  = new char* [NumModules];
   SPFPGAConfigFile   = new char* [NumModules];
@@ -184,6 +186,8 @@ void Pixie16::GetDigitizerInfo(unsigned short modID){
   printf("       Serial Num : %d \n", ModSerNum);
   printf("         ADC Bits : %d \n", ModADCBits);
   printf("ADC sampling rate : %d \n", ModADCMSPS);
+  
+  ch2ns[modID] = 1000/ModADCMSPS;
   
 }
 

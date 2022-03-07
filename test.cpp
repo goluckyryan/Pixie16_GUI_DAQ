@@ -60,6 +60,9 @@ void PrintCommands(){
 
 ///##################################################
 int main(int argc, char *argv[]){
+  
+  printf("Removing Pixie16Msg.log \n");
+  remove( "Pixie16Msg.log");
 
   Pixie16 * pixie = new Pixie16();
   if ( pixie->GetStatus() < 0 ) {
