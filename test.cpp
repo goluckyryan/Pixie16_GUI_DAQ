@@ -131,8 +131,9 @@ int main(int argc, char *argv[]){
   /*
   pixie->CaptureADCTrace(0, ch);
   unsigned short * haha =  pixie->GetADCTrace();
+  double dt = GetChannelSetting("XDT", 0, ch); 
   for( int i = 0 ; i < pixie->GetADCTraceLength(); i++){
-    gTrace->SetPoint(i, i, haha[i]);
+    gTrace->SetPoint(i, i*dt, haha[i]);
   }
   gTrace->GetXaxis()->SetTitle("time [us]");
   canvas->cd(3); gTrace->Draw("APL");

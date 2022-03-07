@@ -45,6 +45,7 @@ enum MOD_CSRB_BIT{
 class Pixie16 {
 
 private:
+  unsigned short   NumCrates;
   unsigned short   NumModules;
   unsigned short * PXISlotMap;
   unsigned short   OfflineMode;
@@ -87,7 +88,7 @@ public:
   bool IsRunning() {return isRunning;}
 
   ///======================== startup
-  bool LoadConfigFile(std::string fileName);
+  bool LoadConfigFile( bool verbose = false, std::string fileName = "Pixie16.config");
 
   void CheckDriver();
   void CheckHardware();

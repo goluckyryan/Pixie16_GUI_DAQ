@@ -39,6 +39,11 @@ Pixie16::Pixie16(){
   isRunning = false;
   retval = 0;
   
+  if( LoadConfigFile() == 0 ) {
+    retval = -1;
+    return;
+  }
+  
   CheckDriver();
   if( retval > 0 ) CheckHardware();
     
@@ -77,15 +82,87 @@ Pixie16::~Pixie16(){
 }
 
 
-bool Pixie16::LoadConfigFile(std::string fileName){
+bool Pixie16::LoadConfigFile(bool verbose, std::string fileName){
   
-  printf("\033[32m======= Loading Configuration file : \033[m\n");
+  /************************************************************
+   * this method is copy and modified from J.M. Allmond (ORNL)
+   * *********************************************************/
+
+  printf("\033[32m======= Loading Configuration file : %s\033[m\n",fileName.c_str());
   
-  NumModules = 1;
-  OfflineMode = 0;
-  PXISlotMap = new unsigned short[NumModules];
+  NumCrates = 1;
   
-  ch2ns = new unsigned short[NumModules];
+  short LINE_LENGTH = 300;
+  char line[LINE_LENGTH];
+  FILE *fprconfig;
+  char configType=0;
+  
+  char tempcharbuf[LINE_LENGTH];
+  int tempint1=0, tempint2=0, tempint3=0;
+  
+  char tempComFPGAConfigFile[100][LINE_LENGTH];
+  char tempSPFPGAConfigFile[100][LINE_LENGTH];
+  char tempDSPCodeFile[100][LINE_LENGTH];
+  char tempDSPParFile[100][LINE_LENGTH];
+  char tempDSPVarFile[100][LINE_LENGTH];
+  unsigned short tempPXISlotMap[100];
+  unsigned short tempPXIFPGAMap[100];
+
+  if ((fprconfig = fopen(fileName.c_str(), "r")) == NULL) {
+    fprintf(stderr, "Error, cannot open input file %s\n", fileName.c_str());
+    return false;
+  } 
+  
+  NumModules = 0;
+  
+  ///========================= Get number of modules and FPGA firmware
+  while(fgets(line, LINE_LENGTH, fprconfig) != NULL){
+    for(int i = 0; i < LINE_LENGTH; i++){
+      if(line[i] == '#'){
+        if(verbose)printf("%s", line);
+        break;
+      }else if(line[i] >= 0 && line[i] != ' ' && line[i] != '\n'){   
+
+        //Slot and mode and fpga
+        if (line[0] == 'S') {
+          sscanf(line,"%c\t%d\t%d\t%d\n", &configType, &tempint1, &tempint2, &tempint3);
+          if(verbose) printf("%c\t%d\t%d\t%d\n", configType, tempint1, tempint2, tempint3);
+          if (tempint1 >= 2 && tempint2 >= 0 && tempint3 >= 0) {
+            tempPXISlotMap[tempint2] = tempint1;
+            tempPXIFPGAMap[tempint2] = tempint3;
+            NumModules ++;
+          }
+          break;
+        //FPGA file
+        }else if (line[0] == 'F') {
+          sscanf(line,"%c\t%d\t%d\t%s\n", &configType, &tempint1, &tempint2, tempcharbuf);
+          if(verbose) printf("%c\t%d\t%d\t%s\n", configType, tempint1, tempint2, tempcharbuf);
+          if (tempint1 >= 0 && tempint1 < 100 && tempint2 >= 0 && tempint2 < 6) {
+            
+            if (tempint2 == 0) strncpy(tempComFPGAConfigFile[tempint1], tempcharbuf, LINE_LENGTH);
+            if (tempint2 == 1) strncpy(tempSPFPGAConfigFile[tempint1], tempcharbuf, LINE_LENGTH); 
+            if (tempint2 == 2) strncpy(tempDSPCodeFile[tempint1], tempcharbuf, LINE_LENGTH);
+            if (tempint2 == 3) strncpy(tempDSPVarFile[tempint1] , tempcharbuf, LINE_LENGTH);
+            if (tempint2 == 4) strncpy(tempDSPParFile[tempint1], tempcharbuf, LINE_LENGTH);
+             
+          }
+          break;
+        }else {
+          printf("Error in reading %s : bad id or format\n", fileName.c_str());
+          return -1;
+        }
+      }else if(line[i]=='\n'){
+        if(verbose) printf("\n");
+        break;
+      }else {
+        continue;
+      }
+    }
+    memset(line, 0, LINE_LENGTH);
+  }
+  fclose(fprconfig);
+  
+  PXISlotMap = new unsigned short [NumModules];
   
   ComFPGAConfigFile  = new char* [NumModules];
   SPFPGAConfigFile   = new char* [NumModules];
@@ -93,27 +170,31 @@ bool Pixie16::LoadConfigFile(std::string fileName){
   DSPCodeFile        = new char* [NumModules];
   DSPParFile         = new char* [NumModules];
   DSPVarFile         = new char* [NumModules];
-  
-  PXISlotMap[0] = 2;
-  
-  ComFPGAConfigFile  [0] = (char *)"/usr/opt/Pixie16/pixie16_revf_general_12b250m_41847_2019-05-18/firmware/syspixie16_revfgeneral_adc250mhz_r33339.bin";
-  SPFPGAConfigFile   [0] = (char *)"/usr/opt/Pixie16/pixie16_revf_general_12b250m_41847_2019-05-18/firmware/fippixie16_revfgeneral_12b250m_r42081.bin";
-  TrigFPGAConfigFile [0] = (char *)"FPGATrig"; ///only Revision A
-  DSPCodeFile        [0] = (char *)"/usr/opt/Pixie16/pixie16_revf_general_12b250m_41847_2019-05-18/dsp/Pixie16DSP_revfgeneral_12b250m_r41847.ldr";
-  DSPVarFile         [0] = (char *)"/usr/opt/Pixie16/pixie16_revf_general_12b250m_41847_2019-05-18/dsp/Pixie16DSP_revfgeneral_12b250m_r41847.var";
-  
-  //DSPParFile         [0] = (char *)"/usr/opt/Pixie16/Pixie-16_FSU_Custom_Firmware_06022020/Configuration/Pixie16_FSU_Sample_Setup.set";
-  DSPParFile         [0] = (char *)"/home/ryan/Pixie16/ryan/test_ryan.set";
-  //DSPParFile         [0] = (char *)"/home/ryan/Pixie16/ryan/Pixie16_example_legacy.set";
 
+  
+  OfflineMode = 0;
   BootPattern = 0x7F;
+  
+  for ( int i = 0 ; i < NumModules ; i++){
+    
+    PXISlotMap[i] = tempPXISlotMap[i];
+    
+    ComFPGAConfigFile  [i] = tempComFPGAConfigFile[tempPXIFPGAMap[i]];
+    SPFPGAConfigFile   [i] = tempSPFPGAConfigFile[tempPXIFPGAMap[i]];
+    TrigFPGAConfigFile [i] = (char *)"FPGATrig"; ///only Revision A
+    DSPCodeFile        [i] = tempDSPCodeFile[tempPXIFPGAMap[i]];
+    DSPVarFile         [i] = tempDSPVarFile[tempPXIFPGAMap[i]];
+    DSPParFile         [i] = tempDSPParFile[tempPXIFPGAMap[i]];
+  }
   
   printf("########################## \n");
   printf("Number of Module : %d \n", NumModules);
-  printf("Slot Map : "); for( int i = 0; i < NumModules ; i++) printf("%d\t", PXISlotMap[i]);
+  printf(" Slot Map : "); for( int i = 0; i < NumModules ; i++) printf("%2d\t", PXISlotMap[i]);
+  printf("\n");
+  printf("Module ID : "); for( int i = 0; i < NumModules ; i++) printf("%2d\t", i);
   printf("\n");
   for( int i = 0; i < NumModules; i++){
-    printf("--- configuration files for module-%d\n", i);
+    printf("\033[0;32m--- configuration files for module-%02d (slot-%02d)\033[m\n", i, PXISlotMap[i] );
     printf("  ComFPGA : %s \n", ComFPGAConfigFile[i]);
     printf("   SPFPGA : %s \n", SPFPGAConfigFile[i]);
     printf(" DSP Code : %s \n", DSPCodeFile[i]);
