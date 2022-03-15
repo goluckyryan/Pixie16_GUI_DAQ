@@ -9,9 +9,6 @@
 #include <TAxis.h>
 #include "pixieDAQ.h"
 
-#include "Pixie16Class.h"
-   
-Pixie16 * pixie;
 
 MainWindow::MainWindow(const TGWindow *p,UInt_t w,UInt_t h) {
   
@@ -83,6 +80,8 @@ void MainWindow::getADCTrace() {
   ///TF1 *f1 = new TF1("f1","sin(x)/x",0,gRandom->Rndm()*10);
   ///f1->SetLineWidth(3);
   ///f1->Draw();
+  
+  mainSettings = new MainSettings(gClient->GetRoot(), 800, 600);
 
   printf("--------- get ADCTrace \n");
   

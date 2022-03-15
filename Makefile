@@ -6,8 +6,8 @@ ROOT_FLAG = `root-config --cflags --glibs`
 
 #==== old pixie library
 #APIBASE = /usr/opt/Pixie16/lib/
-#INCFLAGS = -I$(APIBASE)app/ -I$(APIBASE)sys/
-#INCFLAGS2 = -I$(APIBASE)inc/
+#PIXIE_LIB_PATH = -I$(APIBASE)app/ -I$(APIBASE)sys/
+#PIXIE_LIB_PATH2 = -I$(APIBASE)inc/
 #LIBS = $(APIBASE)libPixie16App.a $(APIBASE)libPixie16Sys.a $(PLXBASE)PlxApi.a
 #
 #all: test
@@ -16,61 +16,70 @@ ROOT_FLAG = `root-config --cflags --glibs`
 #	$(CC) test.o Pixie16Class.o $(LIBS) -o test
 #	
 #test.o : test.cpp
-#	$(CC) $(CFLAGS) $(INCFLAGS) $(INCFLAGS2) test.cpp $(ROOT_FLAG)
+#	$(CC) $(CFLAGS) $(PIXIE_LIB_PATH) $(PIXIE_LIB_PATH2) test.cpp $(ROOT_FLAG)
 #
 #Pixie16Class.o : Pixie16Class.h Pixie16Class.cpp DataBlock.h
-#	$(CC) $(CFLAGS) $(INCFLAGS) $(INCFLAGS2) Pixie16Class.cpp DataBlock.h $(ROOT_FLAG)
+#	$(CC) $(CFLAGS) $(PIXIE_LIB_PATH) $(PIXIE_LIB_PATH2) Pixie16Class.cpp DataBlock.h $(ROOT_FLAG)
 #
 
 #==== new pixie library
-INCFLAGS = -I/usr/opt/xia/PixieSDK/ -I/usr/opt/xia/PixieSDK/include/ -I/usr/opt/xia/PixieSDK/include/pixie16/ 
+#the pixie.ini is not needed
+PIXIE_LIB_PATH = -I/usr/opt/xia/PixieSDK/ -I/usr/opt/xia/PixieSDK/include/ -I/usr/opt/xia/PixieSDK/include/pixie16/ 
 APIBASE = /usr/opt/xia/PixieSDK/lib/
 LIBS = $(APIBASE)libPixie16Api.so $(APIBASE)libPixieSDK.a $(PLXBASE)PlxApi.a
 
+
 all: test example  pixieDAQ
 
+#--------------------------
+pixieDAQ : pixieDAQ.o pixieDict.o pixieDict.cxx Pixie16Class.o mainSettings.o
+	@echo "-------- making pixieDAQ "
+	$(CC) $(PIXIE_LIB_PATH) pixieDAQ.o Pixie16Class.o mainSettings.o pixieDict.cxx $(LIBS) -o pixieDAQ $(ROOT_FLAG)
+
+#--------------------------#need to export LD_LIBRARY_PATH
+Pixie16Class.o : Pixie16Class.h Pixie16Class.cpp DataBlock.h
+	@echo "-------- making Pixie16Class.o "
+	$(CC) $(CFLAGS) $(PIXIE_LIB_PATH) Pixie16Class.cpp DataBlock.h $(ROOT_FLAG)
+
+pixieDict.cxx : pixieDAQ.h  pixieDAQLinkDef.h 
+	@echo "--------- creating pcm and cxx "
+	@rootcling -f pixieDict.cxx -c pixieDAQ.h -p $(PIXIE_LIB_PATH) pixieDAQLinkDef.h
+
+pixieDAQ.o :  pixieDAQ.cpp pixieDAQ.h 
+	@echo "--------- creating pixieDAQ.o"
+	$(CC) $(CFLAGS) $(PIXIE_LIB_PATH) pixieDAQ.cpp Pixie16Class.cpp pixieDict.cxx $(ROOT_FLAG)
+
+mainSettings.o : mainSettings.cpp mainSettings.h
+	@echo "--------- creating mainSettings.o"
+	$(CC) $(CFLAGS) mainSettings.cpp $(ROOT_FLAG)
+
+
+
+
+#--------------------------
 example : example.o 
 	@echo "-------- making example"
-	$(CC) $(INCFLAGS) example.o  $(LIBS) -o example
+	$(CC) $(PIXIE_LIB_PATH) example.o  $(LIBS) -o example
 
 example.o : example.cpp
 	@echo "-------- making example.o"
-	$(CC) $(CFLAGS) $(INCFLAGS)  example.cpp 
+	$(CC) $(CFLAGS) $(PIXIE_LIB_PATH)  example.cpp 
 
-
-
+#--------------------------
 test : test.o Pixie16Class.o
 	@echo "-------- making test"
-	$(CC) $(INCFLAGS) test.o Pixie16Class.o  $(LIBS) -o test  $(ROOT_FLAG)
+	$(CC) $(PIXIE_LIB_PATH) test.o Pixie16Class.o  $(LIBS) -o test  $(ROOT_FLAG)
 
 test.o : test.cpp
 	@echo "-------- making test.o"
-	$(CC) $(CFLAGS) $(INCFLAGS)  test.cpp $(ROOT_FLAG)
+	$(CC) $(CFLAGS) $(PIXIE_LIB_PATH)  test.cpp $(ROOT_FLAG)
 
-Pixie16Class.o : Pixie16Class.h Pixie16Class.cpp DataBlock.h
-	@echo "-------- making Pixie16Class.o "
-	$(CC) $(CFLAGS) $(INCFLAGS) Pixie16Class.cpp DataBlock.h $(ROOT_FLAG)
-
-
-
-pixieDAQ : pixieDAQ.o Pixie16Class.o pixieDict.o
-	@echo "-------- making pixieDAQ "
-	$(CC) $(INCFLAGS) pixieDAQ.o Pixie16Class.o pixieDict.cxx $(LIBS)  -o pixieDAQ $(ROOT_FLAG)
-
-pixieDAQ.o :  pixieDAQ.cpp pixieDAQ.h
-	@echo "--------- creating pcm "
-	@rootcling -f pixieDict.cxx -c pixieDAQ.h -p $(INCFLAGS) pixieDAQLinkDef.h
-	@echo "--------- creating pixieDAQ.o"
-	$(CC) $(CFLAGS) $(INCFLAGS) pixieDAQ.cpp Pixie16Class.cpp pixieDict.cxx $(ROOT_FLAG)
 
 #origin root example
 #pixieDAQ: 
 #	@rootcling -f pixieDict.cxx -c pixieDAQ.h pixieDAQLinkDef.h
 #	$(CC) $(CFLAGS) pixieDAQ.cpp  pixieDict.cxx $(ROOT_FLAG)
 
-
-#need to export LD_LIBRARY_PATH
-#the pixie.ini is not needed
 
 clean:
 	rm -f *.o test *.pcm example pixieDAQ *.gch *.cxx
