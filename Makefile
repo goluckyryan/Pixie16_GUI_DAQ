@@ -51,7 +51,7 @@ pixieDAQ.o : pixieDict.cxx pixieDAQ.cpp pixieDAQ.h
 
 mainSettings.o : mainSettings.cpp mainSettings.h
 	@echo "--------- creating mainSettings.o"
-	$(CC) $(CFLAGS) mainSettings.cpp $(ROOT_FLAG)
+	$(CC) $(CFLAGS) $(PIXIE_LIB_PATH) Pixie16Class.o mainSettings.cpp $(ROOT_FLAG)
 
 
 

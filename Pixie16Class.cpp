@@ -170,6 +170,12 @@ void Pixie16::LoadConfigFile(bool verbose, std::string fileName){
   DSPCodeFile        = new char* [NumModules];
   DSPParFile         = new char* [NumModules];
   DSPVarFile         = new char* [NumModules];
+  
+  ModRev = new unsigned short [NumModules];
+  ModSerNum = new unsigned int [NumModules];
+  ModADCBits = new unsigned short [NumModules];
+  ModADCMSPS = new unsigned short [NumModules];
+  numChannels = new unsigned short [NumModules];
 
   OfflineMode = 0;
   BootPattern = 0x7F;
@@ -255,23 +261,20 @@ void Pixie16::CheckHardware(){
 
 void Pixie16::GetDigitizerInfo(unsigned short modID){
 
-  unsigned short ModRev;
-  unsigned int ModSerNum;
-  unsigned short ModADCBits;
-  unsigned short ModADCMSPS;
-  unsigned short numChannels;
-  retval = Pixie16ReadModuleInfo(modID, &ModRev, &ModSerNum, &ModADCBits, &ModADCMSPS, &numChannels);
+
+  //retval = Pixie16ReadModuleInfo(modID, &ModRev, &ModSerNum, &ModADCBits, &ModADCMSPS, &numChannels);
+  retval = Pixie16ReadModuleInfo(modID, &ModRev[modID], &ModSerNum[modID], &ModADCBits[modID], &ModADCMSPS[modID], &numChannels[modID]);
   
   if( CheckError("Pixie16ReadModuleInfo") < 0 ) return ;
   
   printf("------------ Module-%d \n", modID);
-  printf("         Revision : %d \n", ModRev);
-  printf("       Serial Num : %d \n", ModSerNum);
-  printf("         ADC Bits : %d \n", ModADCBits);
-  printf("ADC sampling rate : %d \n", ModADCMSPS);
-  printf("       # channels : %d \n", numChannels);
+  printf("         Revision : %d \n", ModRev[modID]);
+  printf("       Serial Num : %d \n", ModSerNum[modID]);
+  printf("         ADC Bits : %d \n", ModADCBits[modID]);
+  printf("ADC sampling rate : %d \n", ModADCMSPS[modID]);
+  printf("       # channels : %d \n", numChannels[modID]);
   
-  ch2ns[modID] = 1000/ModADCMSPS;
+  ch2ns[modID] = 1000/ModADCMSPS[modID];
   
 }
 

@@ -5,10 +5,24 @@
 #include <TRandom.h>
 #include <TGButton.h>
 #include <TRootEmbeddedCanvas.h>
+#include <TGMenu.h>
+#include <TGLabel.h>
+#include <TGNumberEntry.h>
 #include <TGraph.h>
 #include <TAxis.h>
 #include "pixieDAQ.h"
 
+
+enum MenuIdentifiers{
+  
+  M_FILE_OPEN,
+  M_EXIT,
+  M_MAIN_CH_SETTINGS,
+  M_CH_SETTING,
+  M_DIGITIZER_SETTINGS,
+  M_DIGITIZER_INFOS
+  
+};
 
 MainWindow::MainWindow(const TGWindow *p,UInt_t w,UInt_t h) {
   
@@ -17,21 +31,65 @@ MainWindow::MainWindow(const TGWindow *p,UInt_t w,UInt_t h) {
   /// Create a main frame
   fMain = new TGMainFrame(p,w,h);
   ///fMain->SetWMPosition(500, 500); //does not work
+  fMain->Connect("CloseWindow()", "MainWindow", this, "GoodBye()");
+
+  ///menu
+  fMenuBar = new TGMenuBar(fMain, 1, 1, kHorizontalFrame);
+  fMain->AddFrame(fMenuBar, new TGLayoutHints(kLHintsTop | kLHintsExpandX));
+
+  fMenuFile = new TGPopupMenu(gClient->GetRoot());
+  fMenuFile->AddEntry("&Open...", M_FILE_OPEN);
+  fMenuFile->AddSeparator();
+  fMenuFile->AddEntry("E&xit", M_EXIT);
+  
+  fMenuFile->Connect("Activated(Int_t)", "MainWindow", this, "HandleMenu(Int_t)");
+  fMenuBar->AddPopup("&File",     fMenuFile,     new TGLayoutHints(kLHintsTop | kLHintsLeft, 0, 4, 0, 0));
+  
+  fMenuSettings = new TGPopupMenu(gClient->GetRoot());
+  fMenuSettings->AddEntry("&Main Ch Settings", M_MAIN_CH_SETTINGS);
+  fMenuSettings->AddEntry("&Channel Setting", M_CH_SETTING);
+  fMenuSettings->AddSeparator();
+  fMenuSettings->AddEntry("Digitizer &Settings", M_DIGITIZER_SETTINGS);
+  fMenuSettings->AddEntry("Digitizer &Info", M_DIGITIZER_INFOS);
+  
+  fMenuSettings->Connect("Activated(Int_t)", "MainWindow", this, "HandleMenu(Int_t)");
+  fMenuBar->AddPopup("&Settings", fMenuSettings, new TGLayoutHints(kLHintsTop | kLHintsLeft, 0, 4, 0, 0));
+
+
+  /// Create a horizontal frame widget with buttons
+  TGHorizontalFrame *hframe = new TGHorizontalFrame(fMain,200,40);
+  
+  TGLabel * lb1 = new TGLabel(hframe, "Module ID :");
+  hframe->AddFrame(lb1, new TGLayoutHints(kLHintsCenterX | kLHintsCenterY, 5, 5, 3, 4));
+  
+  modIDEntry = new TGNumberEntry(hframe, 0, 0, 0, TGNumberFormat::kNESInteger, TGNumberFormat::kNEANonNegative);
+  modIDEntry->SetWidth(50);
+  modIDEntry->SetLimits(TGNumberFormat::kNELLimitMinMax, 0, pixie->GetNumModule()-1);
+  hframe->AddFrame(modIDEntry, new TGLayoutHints(kLHintsCenterX , 5, 5, 3, 4));
+  
+  TGLabel * lb2 = new TGLabel(hframe, "Ch :");
+  hframe->AddFrame(lb2, new TGLayoutHints(kLHintsCenterX | kLHintsCenterY, 5, 5, 3, 4));
+  
+  chEntry = new TGNumberEntry(hframe, 0, 0, 0, TGNumberFormat::kNESInteger, TGNumberFormat::kNEANonNegative);
+  chEntry->SetWidth(50);
+  chEntry->SetLimits(TGNumberFormat::kNELLimitMinMax, 0, pixie->GetDigitizerNumChannel(0));
+  hframe->AddFrame(chEntry, new TGLayoutHints(kLHintsCenterX , 5, 5, 3, 4));
+  
+  TGTextButton *bGetADCTrace = new TGTextButton(hframe,"&Get ADC Trace");
+  bGetADCTrace->Connect("Clicked()","MainWindow",this,"getADCTrace()");
+  hframe->AddFrame(bGetADCTrace, new TGLayoutHints(kLHintsCenterX, 5,5,3,4));
+
+
+  fMain->AddFrame(hframe, new TGLayoutHints(kLHintsCenterX,2,2,2,2));
+
+
 
   /// Create canvas widget
   fEcanvas = new TRootEmbeddedCanvas("Ecanvas",fMain,800,400);
   fMain->AddFrame(fEcanvas, new TGLayoutHints(kLHintsExpandX | kLHintsExpandY, 10,10,10,1));
-  /// Create a horizontal frame widget with buttons
-  TGHorizontalFrame *hframe = new TGHorizontalFrame(fMain,200,40);
 
-  TGTextButton *draw = new TGTextButton(hframe,"&Draw");
-  draw->Connect("Clicked()","MainWindow",this,"getADCTrace()");
-  hframe->AddFrame(draw, new TGLayoutHints(kLHintsCenterX, 5,5,3,4));
-  TGTextButton *exit = new TGTextButton(hframe,"&Exit");
-  exit->Connect("Clicked()", "MainWindow", this, "GoodBye()");
-  
-  hframe->AddFrame(exit, new TGLayoutHints(kLHintsCenterX,5,5,3,4));
-  fMain->AddFrame(hframe, new TGLayoutHints(kLHintsCenterX,2,2,2,2));
+  //===== TODO add msg box
+
 
   /// Set a name to the main frame
   fMain->SetWindowName("Pixie16 DAQ");
@@ -44,7 +102,6 @@ MainWindow::MainWindow(const TGWindow *p,UInt_t w,UInt_t h) {
 
   /// Map main frame
   fMain->MapWindow();
-  
   
   ///================ pixie
   ///printf("Removing Pixie16Msg.log \n");
@@ -60,6 +117,28 @@ MainWindow::~MainWindow() {
   /// Clean up used widgets: frames, buttons, layout hints
   fMain->Cleanup();
   delete fMain;
+  delete fMenuBar;
+  delete fMenuFile;
+  delete fMenuSettings;
+}
+
+
+void MainWindow::HandleMenu(Int_t id){
+  switch(id){
+    
+    case M_FILE_OPEN:{
+      
+    }break;
+    
+    case M_EXIT: GoodBye(); break;
+    
+    case M_MAIN_CH_SETTINGS: {
+      mainSettings = new MainSettings(gClient->GetRoot(), 600, 600, pixie);
+    }break;
+    
+    
+  }
+  
 }
 
 void MainWindow::openPixie(){
@@ -76,20 +155,14 @@ void MainWindow::openPixie(){
 }
 
 void MainWindow::getADCTrace() {
-  /// Draws function graphics in randomly chosen interval
-  ///TF1 *f1 = new TF1("f1","sin(x)/x",0,gRandom->Rndm()*10);
-  ///f1->SetLineWidth(3);
-  ///f1->Draw();
-  
-  mainSettings = new MainSettings(gClient->GetRoot(), 800, 600);
-
   printf("--------- get ADCTrace \n");
   
-  int ch = 6;
-  pixie->CaptureADCTrace(0, ch);
+  int modID = modIDEntry->GetNumber();
+  int ch = chEntry->GetNumber();
+  pixie->CaptureADCTrace(modID, ch);
   
   unsigned short * haha =  pixie->GetADCTrace();
-  double dt = pixie->GetChannelSetting("XDT", 0, ch); 
+  double dt = pixie->GetChannelSetting("XDT", modID, ch); 
   
   TGraph * gTrace = new TGraph();
   
@@ -104,6 +177,7 @@ void MainWindow::getADCTrace() {
   fCanvas->Update();
   
 }
+
 
 
 void MainWindow::GoodBye(){

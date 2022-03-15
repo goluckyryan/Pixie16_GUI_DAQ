@@ -50,14 +50,20 @@ private:
   unsigned short * PXISlotMap;
   unsigned short   OfflineMode;
   
-  unsigned short * ch2ns;
-
   char ** ComFPGAConfigFile;
   char ** SPFPGAConfigFile;
   char ** TrigFPGAConfigFile;
   char ** DSPCodeFile;
   char ** DSPParFile;
   char ** DSPVarFile;
+  
+  
+  unsigned short * ModRev;
+  unsigned int   * ModSerNum;
+  unsigned short * ModADCBits;
+  unsigned short * ModADCMSPS;
+  unsigned short * numChannels;
+  unsigned short * ch2ns;
   
   unsigned short BootPattern ;
   
@@ -110,6 +116,12 @@ public:
   unsigned short * GetADCTrace()   {return ADCTrace;}
   
   ///========================= Setting
+
+  unsigned int GetNumModule() {return NumModules;}
+  unsigned int GetDigitizerSerialNumber(unsigned short modID) { return ModSerNum[modID];} 
+  unsigned short GetDigitizerRev(unsigned short modID) { return ModRev[modID];}
+  unsigned short GetDigitizerADCBits(unsigned short modID) { return ModADCBits[modID];}
+  unsigned short GetDigitizerNumChannel(unsigned short modID) { return numChannels[modID];}
 
   unsigned int GetDigitizerSetting(std::string parName, unsigned short modID, bool verbose = false);
 
