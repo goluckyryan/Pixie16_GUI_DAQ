@@ -11,7 +11,7 @@
 #include <sys/time.h> /* struct timeval, select() */
 #include <termios.h> /* tcgetattr(), tcsetattr() */
 
-#include "Pixie16Class.h"
+#include "../Pixie16Class.h"
 
 #include "TROOT.h"
 #include "TSystem.h"

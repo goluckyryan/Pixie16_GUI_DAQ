@@ -45,7 +45,7 @@ pixieDict.cxx : pixieDAQ.h  pixieDAQLinkDef.h
 	@echo "--------- creating pcm and cxx "
 	@rootcling -f pixieDict.cxx -c pixieDAQ.h -p $(PIXIE_LIB_PATH) pixieDAQLinkDef.h
 
-pixieDAQ.o :  pixieDAQ.cpp pixieDAQ.h 
+pixieDAQ.o : pixieDict.cxx pixieDAQ.cpp pixieDAQ.h  
 	@echo "--------- creating pixieDAQ.o"
 	$(CC) $(CFLAGS) $(PIXIE_LIB_PATH) pixieDAQ.cpp Pixie16Class.cpp pixieDict.cxx $(ROOT_FLAG)
 
@@ -59,20 +59,20 @@ mainSettings.o : mainSettings.cpp mainSettings.h
 #--------------------------
 example : example.o 
 	@echo "-------- making example"
-	$(CC) $(PIXIE_LIB_PATH) example.o  $(LIBS) -o example
+	$(CC) $(PIXIE_LIB_PATH) testing/example.o  $(LIBS) -o testing/example
 
-example.o : example.cpp
+example.o : testing/example.cpp
 	@echo "-------- making example.o"
-	$(CC) $(CFLAGS) $(PIXIE_LIB_PATH)  example.cpp 
+	$(CC) $(CFLAGS) $(PIXIE_LIB_PATH)  testing/example.cpp -o testing/example.o
 
 #--------------------------
 test : test.o Pixie16Class.o
 	@echo "-------- making test"
-	$(CC) $(PIXIE_LIB_PATH) test.o Pixie16Class.o  $(LIBS) -o test  $(ROOT_FLAG)
+	$(CC) $(PIXIE_LIB_PATH) testing/test.o Pixie16Class.o  $(LIBS) -o testing/test  $(ROOT_FLAG)
 
-test.o : test.cpp
+test.o : testing/test.cpp
 	@echo "-------- making test.o"
-	$(CC) $(CFLAGS) $(PIXIE_LIB_PATH)  test.cpp $(ROOT_FLAG)
+	$(CC) $(CFLAGS) $(PIXIE_LIB_PATH) testing/test.cpp $(ROOT_FLAG) -o testing/test.o
 
 
 #origin root example
@@ -82,6 +82,6 @@ test.o : test.cpp
 
 
 clean:
-	rm -f *.o test *.pcm example pixieDAQ *.gch *.cxx
+	rm -f *.o testing/test testing/example testing/*.o *.pcm testing/example pixieDAQ *.gch *.cxx
 
 
