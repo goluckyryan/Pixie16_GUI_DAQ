@@ -29,7 +29,7 @@ APIBASE = /usr/opt/xia/PixieSDK/lib/
 LIBS = $(APIBASE)libPixie16Api.so $(APIBASE)libPixieSDK.a $(PLXBASE)PlxApi.a
 
 
-all: test example  pixieDAQ
+all: testing/test testing/example  pixieDAQ
 
 #--------------------------
 pixieDAQ : pixieDAQ.o pixieDict.o pixieDict.cxx Pixie16Class.o mainSettings.o
@@ -57,20 +57,20 @@ mainSettings.o : mainSettings.cpp mainSettings.h
 
 
 #--------------------------
-example : example.o 
+testing/example : testing/example.o 
 	@echo "-------- making example"
 	$(CC) $(PIXIE_LIB_PATH) testing/example.o  $(LIBS) -o testing/example
 
-example.o : testing/example.cpp
+testing/example.o : testing/example.cpp
 	@echo "-------- making example.o"
 	$(CC) $(CFLAGS) $(PIXIE_LIB_PATH)  testing/example.cpp -o testing/example.o
 
 #--------------------------
-test : test.o Pixie16Class.o
+testing/test : testing/test.o Pixie16Class.o
 	@echo "-------- making test"
 	$(CC) $(PIXIE_LIB_PATH) testing/test.o Pixie16Class.o  $(LIBS) -o testing/test  $(ROOT_FLAG)
 
-test.o : testing/test.cpp
+testing/test.o : testing/test.cpp
 	@echo "-------- making test.o"
 	$(CC) $(CFLAGS) $(PIXIE_LIB_PATH) testing/test.cpp $(ROOT_FLAG) -o testing/test.o
 
