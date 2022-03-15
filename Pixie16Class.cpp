@@ -39,32 +39,30 @@ Pixie16::Pixie16(){
   isRunning = false;
   retval = 0;
   
-  if( LoadConfigFile() == 0 ) {
-    retval = -1;
-    return;
-  }
-  
   CheckDriver();
   if( retval > 0 ) CheckHardware();
     
   if( retval > 0 ){
-    LoadConfigFile("");
     
-    BootDigitizers();
+    LoadConfigFile();
+    
+    if( retval > 0 ) {
+      BootDigitizers();
 
-    nFIFOWords = 0;
-    ExtFIFO_Data = NULL;
-    Statistics = NULL;
+      nFIFOWords = 0;
+      ExtFIFO_Data = NULL;
+      Statistics = NULL;
+      
+      data = new DataBlock();
+      nextWord = 0;
     
-    data = new DataBlock();
-    nextWord = 0;
+    }
   }
 }
 
 Pixie16::~Pixie16(){
   
-  retval = Pixie16ExitSystem(NumModules);
-  CheckError("Pixie16ExitSystem");
+  CloseDigitizers();
   
   delete PXISlotMap;
   delete ch2ns;
@@ -82,7 +80,7 @@ Pixie16::~Pixie16(){
 }
 
 
-bool Pixie16::LoadConfigFile(bool verbose, std::string fileName){
+void Pixie16::LoadConfigFile(bool verbose, std::string fileName){
   
   /************************************************************
    * this method is copy and modified from J.M. Allmond (ORNL)
@@ -110,7 +108,8 @@ bool Pixie16::LoadConfigFile(bool verbose, std::string fileName){
 
   if ((fprconfig = fopen(fileName.c_str(), "r")) == NULL) {
     fprintf(stderr, "Error, cannot open input file %s\n", fileName.c_str());
-    return false;
+    retval = -1;
+    return ;
   } 
   
   NumModules = 0;
@@ -149,7 +148,8 @@ bool Pixie16::LoadConfigFile(bool verbose, std::string fileName){
           break;
         }else {
           printf("Error in reading %s : bad id or format\n", fileName.c_str());
-          return -1;
+          retval = -2;
+          return;
         }
       }else if(line[i]=='\n'){
         if(verbose) printf("\n");
@@ -171,9 +171,10 @@ bool Pixie16::LoadConfigFile(bool verbose, std::string fileName){
   DSPParFile         = new char* [NumModules];
   DSPVarFile         = new char* [NumModules];
 
-  
   OfflineMode = 0;
   BootPattern = 0x7F;
+  
+  ch2ns = new unsigned short [NumModules];
   
   for ( int i = 0 ; i < NumModules ; i++){
     
@@ -202,7 +203,7 @@ bool Pixie16::LoadConfigFile(bool verbose, std::string fileName){
     printf(" DSP Par  : %s \n", DSPParFile[i]);
   }
   
-  return true;  
+  retval = 1;  
 }
 
 int Pixie16::CheckError(std::string operation){
@@ -258,7 +259,8 @@ void Pixie16::GetDigitizerInfo(unsigned short modID){
   unsigned int ModSerNum;
   unsigned short ModADCBits;
   unsigned short ModADCMSPS;
-  retval = Pixie16ReadModuleInfo(modID, &ModRev, &ModSerNum, &ModADCBits, &ModADCMSPS);
+  unsigned short numChannels;
+  retval = Pixie16ReadModuleInfo(modID, &ModRev, &ModSerNum, &ModADCBits, &ModADCMSPS, &numChannels);
   
   if( CheckError("Pixie16ReadModuleInfo") < 0 ) return ;
   
@@ -267,6 +269,7 @@ void Pixie16::GetDigitizerInfo(unsigned short modID){
   printf("       Serial Num : %d \n", ModSerNum);
   printf("         ADC Bits : %d \n", ModADCBits);
   printf("ADC sampling rate : %d \n", ModADCMSPS);
+  printf("       # channels : %d \n", numChannels);
   
   ch2ns[modID] = 1000/ModADCMSPS;
   
@@ -307,6 +310,10 @@ void Pixie16::BootDigitizers(){
   
 }
 
+void Pixie16::CloseDigitizers(){
+  retval = Pixie16ExitSystem(NumModules);
+  CheckError("Pixie16ExitSystem");
+}
 
 void Pixie16::AdjustOffset(){
   
@@ -608,9 +615,9 @@ void Pixie16::PrintChannelAllSettings(unsigned short modID, unsigned short ch){
 
 void Pixie16::PrintChannelsMainSettings(unsigned short modID){
 
-  printf("====+=====+======+========+========+===========+==========+==========+==========+========+========+=========+======+====== \n");  
-  printf(" ch | En  | Gain | Trig_L | Trig_G | Threshold | Polarity | Energy_L | Energy_G | Tau    | Trace  | Trace_d | Voff | BL \n");
-  printf("----+-----+------+--------+--------+-----------+----------+----------+----------+--------+--------+---------+------+------ \n");
+  printf("====+=====+======+========+========+===========+==========+==========+==========+========+========+=========+=======+====== \n");  
+  printf(" ch | En  | Gain | Trig_L | Trig_G | Threshold | Polarity | Energy_L | Energy_G | Tau    | Trace  | Trace_d |  Voff | BL \n");
+  printf("----+-----+------+--------+--------+-----------+----------+----------+----------+--------+--------+---------+-------+------ \n");
   for( int ch = 0; ch < 16; ch ++){
     printf(" %2d |", ch);
     printf(" %3s |", GetChannelOnOff(modID, ch) ? "On" : "Off" );
@@ -629,7 +636,7 @@ void Pixie16::PrintChannelsMainSettings(unsigned short modID){
       printf(" %7s |", "Off");
       printf(" %7s |", "Off");
     }    
-    printf(" %4.2f |", GetChannelVOffset(modID, ch));
+    printf(" %5.2f |", GetChannelVOffset(modID, ch));
     printf(" %4.2f %% \n", GetChannelBaseLinePrecent(modID, ch));
   }
 }

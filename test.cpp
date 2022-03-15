@@ -79,8 +79,10 @@ int main(int argc, char *argv[]){
   TH1F * hch = new TH1F("hch", "channel", 16, 0, 16);
   TH1F * hE = new TH1F("hE", "energy", 400, 0, 30000);
   TGraph * gTrace = new TGraph();
-  gTrace->GetXaxis()->SetTitle("time [ch = 4 ns]");
-
+  
+  int ch2ns = pixie->GetCh2ns(0);
+  gTrace->GetXaxis()->SetTitle("time [ns]");
+  
   
   //pixie->SetDigitizerPresetRunTime(100000, 0);
   //pixie->SetDigitizerSynchWait(0, 0); // not simultaneously
@@ -111,33 +113,34 @@ int main(int argc, char *argv[]){
   
   
   //pixie->SetChannelEnergyRiseTime(2, 0, ch);
-  pixie->SetChannelTriggerThreshold(300, 0, ch);
+  //pixie->SetChannelTriggerThreshold(300, 0, ch);
   //pixie->SetChannelEnergyTau(50, 0, ch);
   //pixie->SetChannelOnOff(true, 0, ch);
   //pixie->SetChannelPositivePolarity(true, 0, ch);
   //pixie->SetChannelTraceOnOff(true, 0, ch);
-  pixie->SetChannelBaseLinePrecent(90, 0, ch);
-  //pixie->SetChannelVOffset(0.0, 0, ch);
+  //pixie->SetChannelBaseLinePrecent(10, 0, ch);
+  //pixie->SetChannelVOffset(-0.5, 0, ch);
   //pixie->SetChannelTraceLenght(10, 0, ch);
   //pixie->SetChannelTraceDelay(2, 0, ch);
-  pixie->SetChannelGain(1, 0, ch);
-  pixie->SaveSettings("test_ryan.set");
+  //pixie->SetChannelGain(1, 0, ch);
+  //pixie->SaveSettings("test_ryan.set");
   
   
   pixie->PrintChannelAllSettings(0, ch);
   
   pixie->PrintChannelsMainSettings(0);
   
-  /*
+  
   pixie->CaptureADCTrace(0, ch);
   unsigned short * haha =  pixie->GetADCTrace();
-  double dt = GetChannelSetting("XDT", 0, ch); 
+  double dt = pixie->GetChannelSetting("XDT", 0, ch); 
   for( int i = 0 ; i < pixie->GetADCTraceLength(); i++){
     gTrace->SetPoint(i, i*dt, haha[i]);
   }
   gTrace->GetXaxis()->SetTitle("time [us]");
   canvas->cd(3); gTrace->Draw("APL");
-  */
+  
+  
   
   //pixie->CaptureBaseLine(0, ch);
   //double * baseline = pixie->GetBasline();
@@ -146,10 +149,10 @@ int main(int argc, char *argv[]){
   //  gTrace->SetPoint(i, baselineTime[i]*1000, baseline[i]);
   //  //printf("%5d | %f, %f \n", i, baselineTime[i]*1000, baseline[i]);
   //}
-  //canvas->cd(3); gTrace->Draw("APL");
+  //canvas->cd(2); gTrace->Draw("APL");
   
 
-  
+  /*
   printf("start run for %f sec\n", time);
   
   uint32_t StartTime = get_time(), CurrentTime = get_time();
@@ -175,9 +178,9 @@ int main(int argc, char *argv[]){
         if( data->eventID %10 == 0 ){
           if( data->trace_length > 0 ) {
             for( int i = 0 ; i < data->trace_length; i++){
-              gTrace->SetPoint(i, i, data->trace[i]);
+              gTrace->SetPoint(i, i*ch2ns, data->trace[i]);
             }
-            gTrace->GetYaxis()->SetRangeUser(0, 5000);
+            //gTrace->GetYaxis()->SetRangeUser(0, 5000);
             canvas->cd(3); gTrace->Draw("APL");        
           }
         }

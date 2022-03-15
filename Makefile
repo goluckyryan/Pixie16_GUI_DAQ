@@ -30,9 +30,11 @@ LIBS = $(APIBASE)libPixie16Api.so $(APIBASE)libPixieSDK.a $(PLXBASE)PlxApi.a
 all: test example  pixieDAQ
 
 example : example.o 
+	@echo "-------- making example"
 	$(CC) $(INCFLAGS) example.o  $(LIBS) -o example
 
 example.o : example.cpp
+	@echo "-------- making example.o"
 	$(CC) $(CFLAGS) $(INCFLAGS)  example.cpp 
 
 
@@ -57,7 +59,7 @@ pixieDAQ : pixieDAQ.o Pixie16Class.o pixieDict.o
 
 pixieDAQ.o :  pixieDAQ.cpp pixieDAQ.h
 	@echo "--------- creating pcm "
-	@rootcling -f pixieDict.cxx -c pixieDAQ.h pixieDAQLinkDef.h
+	@rootcling -f pixieDict.cxx -c pixieDAQ.h -p $(INCFLAGS) pixieDAQLinkDef.h
 	@echo "--------- creating pixieDAQ.o"
 	$(CC) $(CFLAGS) $(INCFLAGS) pixieDAQ.cpp Pixie16Class.cpp pixieDict.cxx $(ROOT_FLAG)
 

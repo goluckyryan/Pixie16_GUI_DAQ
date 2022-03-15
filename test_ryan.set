@@ -27,7 +27,7 @@
                     10,
                     10,
                     10,
-                    90,
+                    10,
                     10,
                     10,
                     10,
@@ -423,7 +423,7 @@
                     32768,
                     32768,
                     32768,
-                    32768,
+                    21845,
                     32768,
                     32768,
                     32768,
@@ -970,7 +970,7 @@
             "dsp": {
                 "adc_bits": 16,
                 "adc_msps": 250,
-                "file": "Pixie16DSP_revfgeneral_12b250m_r41847.ldr",
+                "file": "Pixie16DSP_revfgeneral_16b250m_r35921.ldr",
                 "rev": 15,
                 "tag": "15-250-16",
                 "version": "n/a"
@@ -984,7 +984,7 @@
             "fippi": {
                 "adc_bits": 16,
                 "adc_msps": 250,
-                "file": "fippixie16_revfgeneral_12b250m_r42081.bin",
+                "file": "fippixie16_revfgeneral_16b250m_r36563.bin",
                 "rev": 15,
                 "tag": "15-250-16",
                 "version": "n/a"
@@ -1005,7 +1005,7 @@
             "var": {
                 "adc_bits": 16,
                 "adc_msps": 250,
-                "file": "Pixie16DSP_revfgeneral_12b250m_r41847.var",
+                "file": "Pixie16DSP_revfgeneral_16b250m_r35921.var",
                 "rev": 15,
                 "tag": "15-250-16",
                 "version": "n/a"
@@ -1016,7 +1016,7 @@
                 "ChanNum": 0,
                 "CoincPattern": 0,
                 "CoincWait": 0,
-                "ControlTask": 6,
+                "ControlTask": 0,
                 "CrateID": 0,
                 "FIFOLength": 8188,
                 "FastFilterRange": 0,

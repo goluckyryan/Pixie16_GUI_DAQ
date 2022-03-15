@@ -43,7 +43,7 @@ enum MOD_CSRB_BIT{
 };
 
 class Pixie16 {
-
+  
 private:
   unsigned short   NumCrates;
   unsigned short   NumModules;
@@ -88,13 +88,14 @@ public:
   bool IsRunning() {return isRunning;}
 
   ///======================== startup
-  bool LoadConfigFile( bool verbose = false, std::string fileName = "Pixie16.config");
+  void LoadConfigFile( bool verbose = false, std::string fileName = "Pixie16.config");
 
   void CheckDriver();
   void CheckHardware();
   
   void GetDigitizerInfo(unsigned short modID);
   void BootDigitizers();
+  void CloseDigitizers();
   
   unsigned short GetCh2ns(unsigned short modID) {return ch2ns[modID];}
     
