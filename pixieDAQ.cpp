@@ -102,7 +102,7 @@ MainWindow::MainWindow(const TGWindow *p,UInt_t w,UInt_t h) {
   fMain->MapWindow();
   
   
-  HandleMenu(M_MAIN_CH_SETTINGS);
+  //HandleMenu(M_MAIN_CH_SETTINGS);
   
   ///================ pixie
   ///printf("Removing Pixie16Msg.log \n");

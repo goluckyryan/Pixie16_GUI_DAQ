@@ -44,6 +44,7 @@ Pixie16Class.o : Pixie16Class.h Pixie16Class.cpp DataBlock.h
 pixieDict.cxx : pixieDAQ.h  pixieDAQLinkDef.h 
 	@echo "--------- creating pcm and cxx "
 	@rootcling -f pixieDict.cxx -c pixieDAQ.h -p $(PIXIE_LIB_PATH) pixieDAQLinkDef.h
+#	@rootcling -f pixieDict.cxx -c pixieDAQ.h mainSettings.h -p $(PIXIE_LIB_PATH) pixieDAQLinkDef.h
 
 pixieDAQ.o : pixieDict.cxx pixieDAQ.cpp pixieDAQ.h  
 	@echo "--------- creating pixieDAQ.o"
@@ -51,7 +52,9 @@ pixieDAQ.o : pixieDict.cxx pixieDAQ.cpp pixieDAQ.h
 
 mainSettings.o : mainSettings.cpp mainSettings.h
 	@echo "--------- creating mainSettings.o"
-	$(CC) $(CFLAGS) $(PIXIE_LIB_PATH) Pixie16Class.o mainSettings.cpp $(ROOT_FLAG)
+	$(CC) $(CFLAGS) $(PIXIE_LIB_PATH) mainSettings.cpp $(ROOT_FLAG)
+#	$(CC) $(CFLAGS) $(PIXIE_LIB_PATH) Pixie16Class.o mainSettings.cpp $(ROOT_FLAG)
+#	$(CC) $(CFLAGS) $(PIXIE_LIB_PATH) Pixie16Class.o mainSettings.cpp pixieDict.cxx $(ROOT_FLAG)
 
 
 #--------------------------

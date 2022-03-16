@@ -72,6 +72,13 @@ Pixie16::~Pixie16(){
   delete DSPCodeFile;
   delete DSPParFile;
   delete DSPVarFile;
+  
+  delete ModRev;
+  delete ModSerNum;
+  delete ModADCBits;
+  delete ModADCMSPS;
+  delete numChannels;
+  delete ch2ns;
 
   delete ExtFIFO_Data;
   delete Statistics;

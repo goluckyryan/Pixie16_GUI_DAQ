@@ -122,6 +122,7 @@ public:
   unsigned short GetDigitizerRev(unsigned short modID) { return ModRev[modID];}
   unsigned short GetDigitizerADCBits(unsigned short modID) { return ModADCBits[modID];}
   unsigned short GetDigitizerNumChannel(unsigned short modID) { return numChannels[modID];}
+  std::string GetSettingFile(unsigned modID)  {return DSPParFile[modID];}
 
   unsigned int GetDigitizerSetting(std::string parName, unsigned short modID, bool verbose = false);
 
