@@ -216,6 +216,9 @@ int Pixie16::CheckError(std::string operation){
   
   if( retval < 0 ){
     printf("\033[1;31m*ERROR* \033[1;33m%s\033[m failed, retval = %d\n", operation.c_str(), retval);
+    char  msg[300]; 
+    PixieGetReturnCodeText(retval, msg, 300);
+    printf("     error massge : %s \n", msg );
     return -1;
   }
   

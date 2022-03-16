@@ -82,8 +82,6 @@ MainWindow::MainWindow(const TGWindow *p,UInt_t w,UInt_t h) {
 
   fMain->AddFrame(hframe, new TGLayoutHints(kLHintsCenterX,2,2,2,2));
 
-
-
   /// Create canvas widget
   fEcanvas = new TRootEmbeddedCanvas("Ecanvas",fMain,800,400);
   fMain->AddFrame(fEcanvas, new TGLayoutHints(kLHintsExpandX | kLHintsExpandY, 10,10,10,1));
@@ -102,6 +100,9 @@ MainWindow::MainWindow(const TGWindow *p,UInt_t w,UInt_t h) {
 
   /// Map main frame
   fMain->MapWindow();
+  
+  
+  HandleMenu(M_MAIN_CH_SETTINGS);
   
   ///================ pixie
   ///printf("Removing Pixie16Msg.log \n");

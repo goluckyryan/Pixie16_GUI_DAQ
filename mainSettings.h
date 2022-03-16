@@ -18,8 +18,11 @@ public:
   MainSettings(const TGWindow *p, UInt_t w, UInt_t h, Pixie16 * pixie);
   virtual ~MainSettings();
   
-  
   void CloseWindow() { printf("close window\n"); delete this; }
+  
+  void ChangeBL(unsigned short mod, unsigned short ch);
+  
+  void kaka();
   
 };
 

@@ -54,8 +54,6 @@ mainSettings.o : mainSettings.cpp mainSettings.h
 	$(CC) $(CFLAGS) $(PIXIE_LIB_PATH) Pixie16Class.o mainSettings.cpp $(ROOT_FLAG)
 
 
-
-
 #--------------------------
 testing/example : testing/example.o 
 	@echo "-------- making example"
