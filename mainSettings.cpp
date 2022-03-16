@@ -158,19 +158,19 @@ MainSettings::MainSettings(const TGWindow *p, UInt_t w, UInt_t h, Pixie16 * pixi
   
     col++;
     double tracelen = pixie->GetChannelTraceLength(modID, i);
-    if( pixie->GetChannelTraceOnOff(modID, i) == false ) tracelen = -1;
-    neTraceLength[i] = new TGNumberEntry(hframeCh[i], tracelen, 0, 0, TGNumberFormat::kNESRealTwo, TGNumberFormat::kNEAAnyNumber);
+    if( pixie->GetChannelTraceOnOff(modID, i) == false ) tracelen = 0;
+    neTraceLength[i] = new TGNumberEntry(hframeCh[i], tracelen, 0, 0, TGNumberFormat::kNESRealTwo, TGNumberFormat::kNEANonNegative);
     neTraceLength[i]->SetWidth(width[col]);
-    neTraceLength[i]->SetLimits(TGNumberFormat::kNELLimitMinMax, -1, 20.0);
+    neTraceLength[i]->SetLimits(TGNumberFormat::kNELLimitMinMax, 0, 20.0);
     neTraceLength[i]->Connect("Modified()", "MainSettings", this, Form("ChangeTraceLenght(=%d)", i));     
     hframeCh[i]->AddFrame(neTraceLength[i], new TGLayoutHints(kLHintsCenterX , 5, 5, 3, 4));
     
     col++;
     double tracedel = pixie->GetChannelTraceDelay(modID, i);
-    if( pixie->GetChannelTraceOnOff(modID, i) == false ) tracedel = -1;
-    neTraceDelay[i] = new TGNumberEntry(hframeCh[i], tracedel, 0, 0, TGNumberFormat::kNESRealTwo, TGNumberFormat::kNEAAnyNumber);
+    if( pixie->GetChannelTraceOnOff(modID, i) == false ) tracedel = 0;
+    neTraceDelay[i] = new TGNumberEntry(hframeCh[i], tracedel, 0, 0, TGNumberFormat::kNESRealTwo, TGNumberFormat::kNEANonNegative);
     neTraceDelay[i]->SetWidth(width[col]);
-    neTraceDelay[i]->SetLimits(TGNumberFormat::kNELLimitMinMax, -1, 20.0);
+    neTraceDelay[i]->SetLimits(TGNumberFormat::kNELLimitMinMax, 0, 20.0);
     neTraceDelay[i]->Connect("Modified()", "MainSettings", this, Form("ChangeTraceDelay(=%d)", i)); 
     hframeCh[i]->AddFrame(neTraceDelay[i], new TGLayoutHints(kLHintsCenterX , 5, 5, 3, 4));
     
@@ -285,18 +285,31 @@ void MainSettings::ChangeTau(unsigned short ch){
 }
 
 void MainSettings::ChangeTraceLenght(unsigned short ch){
-  //TODO need to set On Off
   short modID = modIDEntry->GetNumber();
   double val = neTraceLength[ch]->GetNumber();  
-  pixie->SetChannelTraceLenght(val, modID, ch);
+  if( val > 0 ){
+      pixie->SetChannelTraceOnOff(true, modID, ch);
+      pixie->SetChannelTraceLenght(val, modID, ch);
+      neTraceDelay[ch]->SetNumber(pixie->GetChannelTraceDelay(modID, ch));
+  }else{
+    pixie->SetChannelTraceOnOff(false, modID, ch);
+    neTraceDelay[ch]->SetNumber(0.);
+  }
   teFileName->SetText(settingFileName + "  (not saved)");
 }
 
 void MainSettings::ChangeTraceDelay(unsigned short ch){
-  //TODO need to set On Off
   short modID = modIDEntry->GetNumber();
   double val = neTraceDelay[ch]->GetNumber();  
-  pixie->SetChannelTraceDelay(val, modID, ch);  
+
+  if( val > 0 ){
+      pixie->SetChannelTraceOnOff(true, modID, ch);
+      pixie->SetChannelTraceDelay(val, modID, ch);
+      neTraceLength[ch]->SetNumber(pixie->GetChannelTraceLength(modID, ch));
+  }else{
+    pixie->SetChannelTraceOnOff(false, modID, ch);
+    neTraceLength[ch]->SetNumber(0.);
+  }
   teFileName->SetText(settingFileName + "  (not saved)");
 }
 
