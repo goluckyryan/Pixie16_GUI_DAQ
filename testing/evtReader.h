@@ -14,7 +14,7 @@
 #include "TString.h"
 #include "TBenchmark.h"
 
-#include "../armory/DataBlock.h"
+#include "../DataBlock.h"
 
 #define MAX_CRATES 2
 #define MAX_BOARDS_PER_CRATE 13

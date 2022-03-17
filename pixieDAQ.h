@@ -37,14 +37,13 @@ public:
    
    void HandleMenu(Int_t id);
    
-   
    void openPixie();
    
    void getADCTrace();
+   void getBaseLine();
 
-   void openMainSettings();
-   
-   
+   void StartRun();
+   void StopRun();
 
    void GoodBye();
 

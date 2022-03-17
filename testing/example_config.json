@@ -3,7 +3,7 @@
     "slot": 2,
     "dsp": {
       "ldr": "/usr/opt/Pixie16/pixie16_revf_general_12b250m_41847_2019-05-18/dsp/Pixie16DSP_revfgeneral_12b250m_r41847.ldr",
-      "par": "/home/ryan/Pixie16/ryan/test_ryan.set",
+      "par": "/home/ryan/Pixie16/GUI/test_ryan.set",
       "var": "/usr/opt/Pixie16/pixie16_revf_general_12b250m_41847_2019-05-18/dsp/Pixie16DSP_revfgeneral_12b250m_r41847.var"
     },
     "fpga": {

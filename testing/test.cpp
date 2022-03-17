@@ -131,14 +131,14 @@ int main(int argc, char *argv[]){
   pixie->PrintChannelsMainSettings(0);
   
   
-  pixie->CaptureADCTrace(0, ch);
-  unsigned short * haha =  pixie->GetADCTrace();
-  double dt = pixie->GetChannelSetting("XDT", 0, ch); 
-  for( int i = 0 ; i < pixie->GetADCTraceLength(); i++){
-    gTrace->SetPoint(i, i*dt, haha[i]);
-  }
-  gTrace->GetXaxis()->SetTitle("time [us]");
-  canvas->cd(3); gTrace->Draw("APL");
+  //pixie->CaptureADCTrace(0, ch);
+  //unsigned short * haha =  pixie->GetADCTrace();
+  //double dt = pixie->GetChannelSetting("XDT", 0, ch); 
+  //for( int i = 0 ; i < pixie->GetADCTraceLength(); i++){
+  //  gTrace->SetPoint(i, i*dt, haha[i]);
+  //}
+  //gTrace->GetXaxis()->SetTitle("time [us]");
+  //canvas->cd(3); gTrace->Draw("APL");
   
   
   
@@ -152,7 +152,8 @@ int main(int argc, char *argv[]){
   //canvas->cd(2); gTrace->Draw("APL");
   
 
-  /*
+  pixie->OpenFile("haha.evt", false);
+  
   printf("start run for %f sec\n", time);
   
   uint32_t StartTime = get_time(), CurrentTime = get_time();
@@ -163,6 +164,7 @@ int main(int argc, char *argv[]){
   while( CurrentTime - StartTime < time * 1000 ){
     
     pixie->ReadData(0);
+    pixie->SaveData();  
     
     while( pixie->GetNextWord() < pixie->GetnFIFOWords() ){
 
@@ -200,6 +202,13 @@ int main(int argc, char *argv[]){
   }
   
   pixie->StopRun();
+  pixie->CloseFile();
+  
+  canvas->cd(1); hch->Draw();
+  canvas->cd(2); hE->Draw();
+  canvas->Modified();
+  canvas->Update();
+  gSystem->ProcessEvents();
   
   //pixie->PrintData();
   

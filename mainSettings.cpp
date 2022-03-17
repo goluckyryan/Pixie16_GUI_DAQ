@@ -32,7 +32,7 @@ MainSettings::MainSettings(const TGWindow *p, UInt_t w, UInt_t h, Pixie16 * pixi
   modIDEntry = new TGNumberEntry(hframe, 0, 0, 0, TGNumberFormat::kNESInteger, TGNumberFormat::kNEANonNegative);
   modIDEntry->SetWidth(50);
   modIDEntry->SetLimits(TGNumberFormat::kNELLimitMinMax, 0, pixie->GetNumModule()-1);
-  //modIDEntry->Connect("Modified()", "MainSettings", this, "ChangeMod()"); 
+  modIDEntry->Connect("Modified()", "MainSettings", this, "ChangeMod()"); 
   hframe->AddFrame(modIDEntry, new TGLayoutHints(kLHintsCenterX , 5, 5, 3, 4));
   
   TGLabel * lb2 = new TGLabel(hframe, "Setting File :");
@@ -347,6 +347,7 @@ void MainSettings::OpenFile(){
   if( fi.fFilename != NULL ) {
     settingFileName = fi.fFilename;
     teFileName->SetText(settingFileName + "  (not saved)");
+    //TODO change the pixie->DSPParFile[]
   }
   dir = fi.fIniDir;  
 }

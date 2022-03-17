@@ -337,11 +337,19 @@ void Pixie16::AdjustOffset(){
 }
 
 void Pixie16::CaptureBaseLine(unsigned short modID, unsigned short ch){  
+  
   retval = Pixie16AcquireBaselines(modID);
   if( CheckError("Pixie16AcquireBaselines::MOD::"+std::to_string(modID)) < 0 ) return;
   
+  
+  ///somehow, this change the DSPParFile
+  std::string temp = DSPParFile[modID];
+  
   retval = Pixie16ReadSglChanBaselines(Baselines, TimeStamps, 3640, modID, ch);
   if( CheckError("Pixie16ReadSglChanBaselines::MOD::"+std::to_string(modID) + "CH::"+std::to_string(ch)) < 0 ) return;
+  
+  strcpy(DSPParFile[modID], temp.c_str());
+
   
 }
 
@@ -359,17 +367,13 @@ void Pixie16::StartRun(bool listMode){
   
   unsigned short mode = NEW_RUN; //RESUME_RUN
   
-  //listmode
   if( listMode ){
-    
-    //SetDigitizerSynchWait(1, i);
-    //SetDigitizerInSynch(0, i);
-    
+    ///listmode
     retval = Pixie16StartListModeRun(NumModules, LIST_MODE_RUN, mode);
     if( CheckError("Pixie16StartListModeRun") < 0 ) return;
     printf("\033[32m LIST_MODE run\033[0m\n");
   }else{
-    //MCA mode
+    ///MCA mode
     retval = Pixie16StartHistogramRun(NumModules, mode);
     if( CheckError("Pixie16StartHistogramRun") < 0 ) return;
     printf("\033[32m MCA MODE run\033[0m\n");
@@ -628,13 +632,13 @@ void Pixie16::PrintChannelAllSettings(unsigned short modID, unsigned short ch){
 
 void Pixie16::PrintChannelsMainSettings(unsigned short modID){
 
-  printf("====+=====+======+========+========+===========+==========+==========+==========+========+========+=========+=======+====== \n");  
-  printf(" ch | En  | Gain | Trig_L | Trig_G | Threshold | Polarity | Energy_L | Energy_G | Tau    | Trace  | Trace_d |  Voff | BL \n");
-  printf("----+-----+------+--------+--------+-----------+----------+----------+----------+--------+--------+---------+-------+------ \n");
+  printf("====+=====+======+========+========+===========+==========+==========+==========+=======+=========+=========+=======+====== \n");  
+  printf(" ch | En  | Gain | Trig_L | Trig_G | Threshold | Polarity | Energy_L | Energy_G | Tau   | Trace   | Trace_d |  Voff | BL \n");
+  printf("----+-----+------+--------+--------+-----------+----------+----------+----------+-------+---------+---------+-------+------ \n");
   for( int ch = 0; ch < 16; ch ++){
     printf(" %2d |", ch);
     printf(" %3s |", GetChannelOnOff(modID, ch) ? "On" : "Off" );
-    printf(" %3s |", GetChannelGain(modID, ch) ? "x1" : "1/4" );
+    printf(" %4s |", GetChannelGain(modID, ch) ? "x1" : "1/4" );
     printf(" %6.2f |", GetChannelTriggerRiseTime(modID, ch));
     printf(" %6.2f |", GetChannelTriggerFlatTop(modID, ch));
     printf(" %9.2f |", GetChannelTriggerThreshold(modID, ch));

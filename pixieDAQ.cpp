@@ -58,29 +58,70 @@ MainWindow::MainWindow(const TGWindow *p,UInt_t w,UInt_t h) {
 
   /// Create a horizontal frame widget with buttons
   TGHorizontalFrame *hframe = new TGHorizontalFrame(fMain,200,40);
+  fMain->AddFrame(hframe, new TGLayoutHints(kLHintsCenterX,2,2,2,2));
   
-  TGLabel * lb1 = new TGLabel(hframe, "Module ID :");
-  hframe->AddFrame(lb1, new TGLayoutHints(kLHintsCenterX | kLHintsCenterY, 5, 5, 3, 4));
+  ///================= signal Channel group
+  TGGroupFrame * group1 = new TGGroupFrame(hframe, "Single Channel", kHorizontalFrame);
+  hframe->AddFrame(group1, new  TGLayoutHints(kLHintsCenterX, 5,5,3,3) );
   
-  modIDEntry = new TGNumberEntry(hframe, 0, 0, 0, TGNumberFormat::kNESInteger, TGNumberFormat::kNEANonNegative);
+  TGHorizontalFrame *hframe1 = new TGHorizontalFrame(group1,200,30);
+  group1->AddFrame(hframe1);
+  
+  TGLabel * lb1 = new TGLabel(hframe1, "Module ID :");
+  hframe1->AddFrame(lb1, new TGLayoutHints(kLHintsCenterX | kLHintsCenterY, 2, 2, 2, 2));
+  
+  modIDEntry = new TGNumberEntry(hframe1, 0, 0, 0, TGNumberFormat::kNESInteger, TGNumberFormat::kNEANonNegative);
   modIDEntry->SetWidth(50);
   modIDEntry->SetLimits(TGNumberFormat::kNELLimitMinMax, 0, pixie->GetNumModule()-1);
-  hframe->AddFrame(modIDEntry, new TGLayoutHints(kLHintsCenterX , 5, 5, 3, 4));
+  hframe1->AddFrame(modIDEntry, new TGLayoutHints(kLHintsCenterX , 2, 2, 3, 2));
   
-  TGLabel * lb2 = new TGLabel(hframe, "Ch :");
-  hframe->AddFrame(lb2, new TGLayoutHints(kLHintsCenterX | kLHintsCenterY, 5, 5, 3, 4));
+  TGLabel * lb2 = new TGLabel(hframe1, "Ch :");
+  hframe1->AddFrame(lb2, new TGLayoutHints(kLHintsCenterX | kLHintsCenterY, 2, 2, 3, 2));
   
-  chEntry = new TGNumberEntry(hframe, 0, 0, 0, TGNumberFormat::kNESInteger, TGNumberFormat::kNEANonNegative);
+  chEntry = new TGNumberEntry(hframe1, 0, 0, 0, TGNumberFormat::kNESInteger, TGNumberFormat::kNEANonNegative);
   chEntry->SetWidth(50);
   chEntry->SetLimits(TGNumberFormat::kNELLimitMinMax, 0, pixie->GetDigitizerNumChannel(0));
-  hframe->AddFrame(chEntry, new TGLayoutHints(kLHintsCenterX , 5, 5, 3, 4));
+  hframe1->AddFrame(chEntry, new TGLayoutHints(kLHintsCenterX , 2, 2, 3, 2));
   
-  TGTextButton *bGetADCTrace = new TGTextButton(hframe,"&Get ADC Trace");
+  TGTextButton *bGetADCTrace = new TGTextButton(hframe1,"Get &ADC Trace");
   bGetADCTrace->Connect("Clicked()","MainWindow",this,"getADCTrace()");
-  hframe->AddFrame(bGetADCTrace, new TGLayoutHints(kLHintsCenterX, 5,5,3,4));
+  hframe1->AddFrame(bGetADCTrace, new TGLayoutHints(kLHintsCenterX, 2,2,3,2));
+
+  TGTextButton *bGetBaseLine = new TGTextButton(hframe1,"Get &BaseLine");
+  bGetBaseLine->Connect("Clicked()","MainWindow",this,"getBaseLine()");
+  hframe1->AddFrame(bGetBaseLine, new TGLayoutHints(kLHintsCenterX, 2,2,3,2));
+
+  ///================= Start Run group
+  TGGroupFrame * group2 = new TGGroupFrame(hframe, "Start run", kHorizontalFrame);
+  hframe->AddFrame(group2, new  TGLayoutHints(kLHintsCenterX, 2,2,3,3) );
+  
+  TGHorizontalFrame *hframe2 = new TGHorizontalFrame(group2,200,30);
+  group2->AddFrame(hframe2);
+  
+  TGTextButton *bStartRun = new TGTextButton(hframe2,"Start &Run");
+  bStartRun->Connect("Clicked()","MainWindow",this,"StartRun()");
+  hframe2->AddFrame(bStartRun, new TGLayoutHints(kLHintsCenterX, 2,2,3,2));
+  
+  TGTextButton *bStopRun = new TGTextButton(hframe2,"Stop Run");
+  bStopRun->Connect("Clicked()","MainWindow",this,"StopRun()");
+  hframe2->AddFrame(bStopRun, new TGLayoutHints(kLHintsCenterX, 2,2,3,4));
+
+  TGTextButton *bScalar = new TGTextButton(hframe2,"Scalar");
+  //bScalar->Connect("Clicked()","MainWindow",this,"getADCTrace()");
+  hframe2->AddFrame(bScalar, new TGLayoutHints(kLHintsCenterX, 2,2,3,2));
 
 
-  fMain->AddFrame(hframe, new TGLayoutHints(kLHintsCenterX,2,2,2,2));
+  ///================= Read evt group
+  TGGroupFrame * group3 = new TGGroupFrame(hframe, "Read Evt", kHorizontalFrame);
+  hframe->AddFrame(group3, new  TGLayoutHints(kLHintsCenterX, 2,2,3,3) );
+  
+  TGHorizontalFrame *hframe3 = new TGHorizontalFrame(group3,200,30);
+  group3->AddFrame(hframe3);
+  
+  TGTextButton *bOpenEVT = new TGTextButton(hframe3,"OpenEvt");
+  //bOpenEVT->Connect("Clicked()","MainWindow",this,"StartRun()");
+  hframe3->AddFrame(bOpenEVT, new TGLayoutHints(kLHintsCenterX, 2,2,3,2));
+  
 
   /// Create canvas widget
   fEcanvas = new TRootEmbeddedCanvas("Ecanvas",fMain,800,400);
@@ -102,7 +143,7 @@ MainWindow::MainWindow(const TGWindow *p,UInt_t w,UInt_t h) {
   fMain->MapWindow();
   
   
-  //HandleMenu(M_MAIN_CH_SETTINGS);
+  ///HandleMenu(M_MAIN_CH_SETTINGS);
   
   ///================ pixie
   ///printf("Removing Pixie16Msg.log \n");
@@ -166,12 +207,12 @@ void MainWindow::getADCTrace() {
   double dt = pixie->GetChannelSetting("XDT", modID, ch); 
   
   TGraph * gTrace = new TGraph();
-  
+
   for( int i = 0 ; i < pixie->GetADCTraceLength(); i++){
     gTrace->SetPoint(i, i*dt, haha[i]);
   }
   gTrace->GetXaxis()->SetTitle("time [us]");
-  gTrace->Draw("AP");
+  gTrace->Draw("APL");
   
   TCanvas *fCanvas = fEcanvas->GetCanvas();
   fCanvas->cd();
@@ -179,6 +220,37 @@ void MainWindow::getADCTrace() {
   
 }
 
+void MainWindow::getBaseLine(){
+
+  printf("1 %s \n", pixie->GetSettingFile(0).c_str());
+  
+  int modID = modIDEntry->GetNumber();
+  int ch = chEntry->GetNumber();
+  pixie->CaptureBaseLine(modID, ch);
+
+  printf("2 %s \n", pixie->GetSettingFile(0).c_str());
+  
+  double * baseline = pixie->GetBasline();
+  double * baselineTime = pixie->GetBaselineTimestamp();
+  
+  printf("3 %s \n", pixie->GetSettingFile(0).c_str());
+  
+  TGraph * gTrace = new TGraph();
+  
+  for( int i = 0 ; i < pixie->GetBaslineLength(); i++){
+    gTrace->SetPoint(i, baselineTime[i]*1000, baseline[i]);
+  }
+  gTrace->GetXaxis()->SetTitle("time [ns]");
+  gTrace->Draw("APL");
+
+  printf("4 %s \n", pixie->GetSettingFile(0).c_str());
+
+  
+  TCanvas *fCanvas = fEcanvas->GetCanvas();
+  fCanvas->cd();
+  fCanvas->Update();
+  
+}
 
 
 void MainWindow::GoodBye(){
@@ -189,6 +261,22 @@ void MainWindow::GoodBye(){
   
   gApplication->Terminate(0);
   
+}
+
+void MainWindow::StartRun(){
+  
+  pixie->StartRun(1);
+
+  ///start a loop that show scalar, plot
+
+  
+}
+
+void MainWindow::StopRun(){
+  
+  pixie->StopRun();
+  
+  pixie->PrintStatistics(0);
 }
 
 
