@@ -57,7 +57,6 @@ private:
   char ** DSPParFile;
   char ** DSPVarFile;
   
-  
   unsigned short * ModRev;
   unsigned int   * ModSerNum;
   unsigned short * ModADCBits;
@@ -76,6 +75,9 @@ private:
   unsigned int nFIFOWords;
   unsigned int * ExtFIFO_Data;
   unsigned int * Statistics;
+  unsigned int totNumFIFOWords;
+
+  
   
   double Baselines[3640], TimeStamps[3640];  ///for baseline
   unsigned short ADCTrace[8192];
@@ -152,7 +154,7 @@ public:
   bool GetChannelGain(unsigned short modID, unsigned short ch, bool verbose = false)         {return GetCSRA(CSRA_BIT::INPUT_RELAY, modID, ch, verbose);}
 
   void PrintChannelAllSettings(unsigned short modID, unsigned short ch);
-  void PrintChannelsMainSettings(unsigned short modID);
+  void PrintChannelSettingsSummary(unsigned short modID);
  
 
   void SetChannelSetting(std::string parName, double val, unsigned short modID, unsigned short ch, bool verbose = false);
@@ -192,10 +194,12 @@ public:
   
   void ReadData(unsigned short modID);
   
+  unsigned int GetTotalNumWords() {return totNumFIFOWords;}
   unsigned int GetnFIFOWords() {return nFIFOWords;}
   unsigned int GetNextWord()   {return nextWord;}
   DataBlock *  GetData()       {return data;}
   bool ProcessSingleData();
+  
   void PrintExtFIFOWords() {
     unsigned int nWords = (ExtFIFO_Data[nextWord] >> 17) & 0x3FFF;
     printf("------------------- print dataBlock, nWords = %d\n", nWords);

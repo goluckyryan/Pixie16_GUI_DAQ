@@ -9,7 +9,16 @@
 #include <TGLabel.h>
 #include <TGNumberEntry.h>
 #include <TGraph.h>
+#include <TGTextEditor.h>
 #include <TAxis.h>
+#include <TBenchmark.h>
+
+#include <thread>
+#include <unistd.h>
+
+#include "Pixie16Class.h"
+static Pixie16 * pixie = new Pixie16();
+
 #include "pixieDAQ.h"
 
 
@@ -68,66 +77,79 @@ MainWindow::MainWindow(const TGWindow *p,UInt_t w,UInt_t h) {
   group1->AddFrame(hframe1);
   
   TGLabel * lb1 = new TGLabel(hframe1, "Module ID :");
-  hframe1->AddFrame(lb1, new TGLayoutHints(kLHintsCenterX | kLHintsCenterY, 2, 2, 2, 2));
+  hframe1->AddFrame(lb1, new TGLayoutHints(kLHintsCenterX | kLHintsCenterY, 2, 2, 5, 0));
   
   modIDEntry = new TGNumberEntry(hframe1, 0, 0, 0, TGNumberFormat::kNESInteger, TGNumberFormat::kNEANonNegative);
   modIDEntry->SetWidth(50);
   modIDEntry->SetLimits(TGNumberFormat::kNELLimitMinMax, 0, pixie->GetNumModule()-1);
-  hframe1->AddFrame(modIDEntry, new TGLayoutHints(kLHintsCenterX , 2, 2, 3, 2));
+  hframe1->AddFrame(modIDEntry, new TGLayoutHints(kLHintsCenterX , 2, 2, 5, 0));
   
   TGLabel * lb2 = new TGLabel(hframe1, "Ch :");
-  hframe1->AddFrame(lb2, new TGLayoutHints(kLHintsCenterX | kLHintsCenterY, 2, 2, 3, 2));
+  hframe1->AddFrame(lb2, new TGLayoutHints(kLHintsCenterX | kLHintsCenterY, 2, 2, 5, 0));
   
   chEntry = new TGNumberEntry(hframe1, 0, 0, 0, TGNumberFormat::kNESInteger, TGNumberFormat::kNEANonNegative);
   chEntry->SetWidth(50);
   chEntry->SetLimits(TGNumberFormat::kNELLimitMinMax, 0, pixie->GetDigitizerNumChannel(0));
-  hframe1->AddFrame(chEntry, new TGLayoutHints(kLHintsCenterX , 2, 2, 3, 2));
+  hframe1->AddFrame(chEntry, new TGLayoutHints(kLHintsCenterX , 2, 2, 5, 0));
   
   TGTextButton *bGetADCTrace = new TGTextButton(hframe1,"Get &ADC Trace");
-  bGetADCTrace->Connect("Clicked()","MainWindow",this,"getADCTrace()");
-  hframe1->AddFrame(bGetADCTrace, new TGLayoutHints(kLHintsCenterX, 2,2,3,2));
+  bGetADCTrace->Connect("Clicked()","MainWindow",this,"GetADCTrace()");
+  hframe1->AddFrame(bGetADCTrace, new TGLayoutHints(kLHintsCenterX, 2,2,5,0));
 
   TGTextButton *bGetBaseLine = new TGTextButton(hframe1,"Get &BaseLine");
-  bGetBaseLine->Connect("Clicked()","MainWindow",this,"getBaseLine()");
-  hframe1->AddFrame(bGetBaseLine, new TGLayoutHints(kLHintsCenterX, 2,2,3,2));
+  bGetBaseLine->Connect("Clicked()","MainWindow",this,"GetBaseLine()");
+  hframe1->AddFrame(bGetBaseLine, new TGLayoutHints(kLHintsCenterX, 2,2,5,0));
+
+  TGTextButton *bScope = new TGTextButton(hframe1,"&Scope");
+  bScope->Connect("Clicked()","MainWindow",this,"Scope()");
+  hframe1->AddFrame(bScope, new TGLayoutHints(kLHintsCenterX, 2,2,5,0));
 
   ///================= Start Run group
   TGGroupFrame * group2 = new TGGroupFrame(hframe, "Start run", kHorizontalFrame);
-  hframe->AddFrame(group2, new  TGLayoutHints(kLHintsCenterX, 2,2,3,3) );
+  hframe->AddFrame(group2, new  TGLayoutHints(kLHintsCenterX, 2,2,5,0) );
   
   TGHorizontalFrame *hframe2 = new TGHorizontalFrame(group2,200,30);
   group2->AddFrame(hframe2);
   
+  tePath = new TGTextEntry(hframe2, new TGTextBuffer(10));
+  tePath->SetText("haha.evt");
+  hframe2->AddFrame(tePath, new TGLayoutHints(kLHintsCenterX, 2,2,5,0));
+  
   TGTextButton *bStartRun = new TGTextButton(hframe2,"Start &Run");
   bStartRun->Connect("Clicked()","MainWindow",this,"StartRun()");
-  hframe2->AddFrame(bStartRun, new TGLayoutHints(kLHintsCenterX, 2,2,3,2));
+  hframe2->AddFrame(bStartRun, new TGLayoutHints(kLHintsCenterX, 2,2,5,0));
   
   TGTextButton *bStopRun = new TGTextButton(hframe2,"Stop Run");
   bStopRun->Connect("Clicked()","MainWindow",this,"StopRun()");
-  hframe2->AddFrame(bStopRun, new TGLayoutHints(kLHintsCenterX, 2,2,3,4));
+  hframe2->AddFrame(bStopRun, new TGLayoutHints(kLHintsCenterX, 2,2,5,0));
 
   TGTextButton *bScalar = new TGTextButton(hframe2,"Scalar");
   //bScalar->Connect("Clicked()","MainWindow",this,"getADCTrace()");
-  hframe2->AddFrame(bScalar, new TGLayoutHints(kLHintsCenterX, 2,2,3,2));
+  hframe2->AddFrame(bScalar, new TGLayoutHints(kLHintsCenterX, 2,2,5,0));
 
 
   ///================= Read evt group
   TGGroupFrame * group3 = new TGGroupFrame(hframe, "Read Evt", kHorizontalFrame);
-  hframe->AddFrame(group3, new  TGLayoutHints(kLHintsCenterX, 2,2,3,3) );
+  hframe->AddFrame(group3, new  TGLayoutHints(kLHintsCenterX, 2,2,5,0) );
   
   TGHorizontalFrame *hframe3 = new TGHorizontalFrame(group3,200,30);
   group3->AddFrame(hframe3);
   
   TGTextButton *bOpenEVT = new TGTextButton(hframe3,"OpenEvt");
   //bOpenEVT->Connect("Clicked()","MainWindow",this,"StartRun()");
-  hframe3->AddFrame(bOpenEVT, new TGLayoutHints(kLHintsCenterX, 2,2,3,2));
-  
+  hframe3->AddFrame(bOpenEVT, new TGLayoutHints(kLHintsCenterX, 2,2,5,0));
+    
 
-  /// Create canvas widget
+  ///================= Create canvas widget
   fEcanvas = new TRootEmbeddedCanvas("Ecanvas",fMain,800,400);
   fMain->AddFrame(fEcanvas, new TGLayoutHints(kLHintsExpandX | kLHintsExpandY, 10,10,10,1));
 
-  //===== TODO add msg box
+  ///================= Log massage
+  TGGroupFrame * groupLog = new TGGroupFrame(fMain, "Log Message", kHorizontalFrame);
+  fMain->AddFrame(groupLog, new  TGLayoutHints(kLHintsCenterX, 5,5,3,3) );
+  
+  teLog = new TGTextEdit(groupLog, w, 60);
+  groupLog->AddFrame(teLog, new TGLayoutHints(kLHintsExpandX | kLHintsExpandY, 0,0,5,0));
 
 
   /// Set a name to the main frame
@@ -142,17 +164,12 @@ MainWindow::MainWindow(const TGWindow *p,UInt_t w,UInt_t h) {
   /// Map main frame
   fMain->MapWindow();
   
+  /// setup thread
+  thread = new TThread("hahaha", SaveData, (void *) 1);
+  
   
   ///HandleMenu(M_MAIN_CH_SETTINGS);
-  
-  ///================ pixie
-  ///printf("Removing Pixie16Msg.log \n");
-  ///remove( "Pixie16Msg.log");
-  
-  ///pixie = new Pixie16();
-  ///if ( pixie->GetStatus() < 0 ) {
-  ///  GoodBye();
-  ///}
+
   
 }
 MainWindow::~MainWindow() {
@@ -175,9 +192,8 @@ void MainWindow::HandleMenu(Int_t id){
     case M_EXIT: GoodBye(); break;
     
     case M_MAIN_CH_SETTINGS: {
-      mainSettings = new MainSettings(gClient->GetRoot(), 600, 600, pixie);
+      mainSettings = new SettingsSummary(gClient->GetRoot(), 600, 600, pixie);
     }break;
-    
     
   }
   
@@ -188,7 +204,6 @@ void MainWindow::openPixie(){
   printf("Removing Pixie16Msg.log \n");
   remove( "Pixie16Msg.log");
 
-  pixie = new Pixie16();
   if ( pixie->GetStatus() < 0 ) {
     printf("Exiting program... \n");
     GoodBye();
@@ -196,7 +211,7 @@ void MainWindow::openPixie(){
   
 }
 
-void MainWindow::getADCTrace() {
+void MainWindow::GetADCTrace() {
   printf("--------- get ADCTrace \n");
   
   int modID = modIDEntry->GetNumber();
@@ -220,20 +235,14 @@ void MainWindow::getADCTrace() {
   
 }
 
-void MainWindow::getBaseLine(){
+void MainWindow::GetBaseLine(){
 
-  printf("1 %s \n", pixie->GetSettingFile(0).c_str());
-  
   int modID = modIDEntry->GetNumber();
   int ch = chEntry->GetNumber();
   pixie->CaptureBaseLine(modID, ch);
-
-  printf("2 %s \n", pixie->GetSettingFile(0).c_str());
   
   double * baseline = pixie->GetBasline();
   double * baselineTime = pixie->GetBaselineTimestamp();
-  
-  printf("3 %s \n", pixie->GetSettingFile(0).c_str());
   
   TGraph * gTrace = new TGraph();
   
@@ -242,15 +251,72 @@ void MainWindow::getBaseLine(){
   }
   gTrace->GetXaxis()->SetTitle("time [ns]");
   gTrace->Draw("APL");
-
-  printf("4 %s \n", pixie->GetSettingFile(0).c_str());
-
   
   TCanvas *fCanvas = fEcanvas->GetCanvas();
   fCanvas->cd();
   fCanvas->Update();
   
 }
+
+void MainWindow::Scope(){
+  
+  int modID = modIDEntry->GetNumber();
+  int ch = chEntry->GetNumber();
+  
+  if( pixie->GetChannelOnOff(modID, ch) == false ){
+    LogMsg(Form("ch-%d is disabled\n", ch));
+    return;
+  }
+  
+  
+  double dt = pixie->GetCh2ns(modID);
+  
+  DataBlock * data = pixie->GetData(); 
+  
+  pixie->StartRun(1);
+  
+  usleep(100*1000);
+  pixie->ReadData(0);
+  pixie->StopRun();
+  
+  TGraph * gTrace = new TGraph();
+  
+  printf("              next word : %u\n", pixie->GetNextWord());
+  printf("number of word received : %u\n", pixie->GetnFIFOWords());
+
+  //TODO add statistics, like trigger rate
+  
+  while(!pixie->ProcessSingleData()){
+    
+    if( pixie->GetNextWord() >= pixie->GetnFIFOWords() ) break;
+    if( data->slot < 2 ) break;
+    if(  data->eventID >= pixie->GetnFIFOWords() ) break;
+    
+    printf("mod:%d, ch:%d, event:%llu, %u, %u\n", data->slot-2, data->ch, data->eventID, pixie->GetNextWord(), pixie->GetnFIFOWords() );
+      
+    if( data->ch == ch && data->slot == modID + 2 ){
+
+      for( int i = 0 ; i < data->trace_length; i++){
+        gTrace->SetPoint(i, i*dt, (data->trace)[i]);
+      }
+      gTrace->GetXaxis()->SetTitle("time [us]");
+      gTrace->SetTitle(Form("mod:%d, ch:%d, event:%llu\n", modID, ch, data->eventID));
+      gTrace->Draw("APL");
+      
+      TCanvas *fCanvas = fEcanvas->GetCanvas();
+      fCanvas->cd();
+      fCanvas->Update();
+    
+      break;
+      
+    }
+  }
+  
+  
+  printf("=============== finished \n");
+  
+}
+
 
 
 void MainWindow::GoodBye(){
@@ -265,10 +331,41 @@ void MainWindow::GoodBye(){
 
 void MainWindow::StartRun(){
   
+  pixie->OpenFile(tePath->GetText(), false);
+  
   pixie->StartRun(1);
 
-  ///start a loop that show scalar, plot
+  //Emit("StartRun()"); 
 
+  ///start a loop that show scalar, plot
+  //TBenchmark clock;
+  //clock.Reset();
+  //clock.Start("timer");
+  
+  if( pixie->IsRunning() ) thread->Run();
+  
+}
+
+
+void * MainWindow::SaveData(void* ptr){
+  
+  printf("Save Data()\n");
+  
+  while( pixie->IsRunning() ){
+    
+    usleep(500*1000);
+    
+    pixie->ReadData(0);
+    pixie->SaveData();
+    
+  }
+  
+  pixie->ReadData(0);
+  pixie->SaveData();
+  
+  printf("finished Save Data.\n");
+  
+  return ptr;
   
 }
 
@@ -276,7 +373,15 @@ void MainWindow::StopRun(){
   
   pixie->StopRun();
   
+  pixie->CloseFile();
+  
   pixie->PrintStatistics(0);
+}
+
+void MainWindow::LogMsg(TString msg){
+  teLog->AddLine(msg);
+  teLog->LineDown();
+  teLog->End();
 }
 
 
@@ -284,7 +389,7 @@ int main(int argc, char **argv) {
   printf(" Welcome to pixie16 DQ \n");
   
   TApplication theApp("App",&argc,argv);
-  new MainWindow(gClient->GetRoot(),800,600);
+  new MainWindow(gClient->GetRoot(),800,800);
   theApp.Run();
   return 0;
 }

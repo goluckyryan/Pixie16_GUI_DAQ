@@ -5,14 +5,13 @@
 #include <TRandom.h>
 #include <TGButton.h>
 #include <TRootEmbeddedCanvas.h>
-#include <TGLabel.h>
 #include <TGTableContainer.h>
 #include <TGFileDialog.h>
 
-#include "mainSettings.h"
+#include "settingsSummary.h"
 
 
-MainSettings::MainSettings(const TGWindow *p, UInt_t w, UInt_t h, Pixie16 * pixie){
+SettingsSummary::SettingsSummary(const TGWindow *p, UInt_t w, UInt_t h, Pixie16 * pixie){
   
   this->pixie = pixie; 
   
@@ -20,7 +19,10 @@ MainSettings::MainSettings(const TGWindow *p, UInt_t w, UInt_t h, Pixie16 * pixi
   
   fMain = new TGMainFrame(p,w,h);
   fMain->SetWindowName("Pixie16 Channel Settings ");
-  fMain->Connect("CloseWindow()", "MainSettings", this, "CloseWindow()");
+  fMain->Connect("CloseWindow()", "SettingsSummary", this, "CloseWindow()");
+  
+  gClient->GetColorByName("red", red);
+  gClient->GetColorByName("black", black);
   
   ///Module choose
   TGHorizontalFrame *hframe = new TGHorizontalFrame(fMain, w, 50 );
@@ -32,7 +34,7 @@ MainSettings::MainSettings(const TGWindow *p, UInt_t w, UInt_t h, Pixie16 * pixi
   modIDEntry = new TGNumberEntry(hframe, 0, 0, 0, TGNumberFormat::kNESInteger, TGNumberFormat::kNEANonNegative);
   modIDEntry->SetWidth(50);
   modIDEntry->SetLimits(TGNumberFormat::kNELLimitMinMax, 0, pixie->GetNumModule()-1);
-  modIDEntry->Connect("Modified()", "MainSettings", this, "ChangeMod()"); 
+  modIDEntry->Connect("Modified()", "SettingsSummary", this, "ChangeMod()"); 
   hframe->AddFrame(modIDEntry, new TGLayoutHints(kLHintsCenterX , 5, 5, 3, 4));
   
   TGLabel * lb2 = new TGLabel(hframe, "Setting File :");
@@ -44,11 +46,11 @@ MainSettings::MainSettings(const TGWindow *p, UInt_t w, UInt_t h, Pixie16 * pixi
   hframe->AddFrame(teFileName, new TGLayoutHints(kLHintsCenterX, 5,5,3,4));
   
   TGTextButton * bOpen = new TGTextButton(hframe,"&Open");
-  bOpen->Connect("Clicked()","MainSettings",this, "OpenFile()");
+  bOpen->Connect("Clicked()","SettingsSummary",this, "OpenFile()");
   hframe->AddFrame(bOpen, new TGLayoutHints(kLHintsCenterX, 5,5,3,4));
   
   TGTextButton * bSave = new TGTextButton(hframe,"&Save");
-  bSave->Connect("Clicked()","MainSettings",this, "SaveSetting()");
+  bSave->Connect("Clicked()","SettingsSummary",this, "SaveSetting()");
   hframe->AddFrame(bSave, new TGLayoutHints(kLHintsCenterX, 5,5,3,4));
   
   /// Setting
@@ -74,8 +76,7 @@ MainSettings::MainSettings(const TGWindow *p, UInt_t w, UInt_t h, Pixie16 * pixi
   }
 
   TGHorizontalFrame ** hframeCh  = new TGHorizontalFrame * [MAXCH];
-  TGLabel ** lbCh  = new TGLabel * [MAXCH];
-  
+    
   for( int i = 0; i < MAXCH ; i ++){
 
     //printf("-----------------------%d\n", i);
@@ -85,6 +86,7 @@ MainSettings::MainSettings(const TGWindow *p, UInt_t w, UInt_t h, Pixie16 * pixi
     int col = 0;
     lbCh[i] = new TGLabel(hframeCh[i] , Form("%02d", i));
     lbCh[i]->SetWidth(width[col]);
+    lbCh[i]->SetTextColor(red);
     hframeCh[i]->AddFrame(lbCh[i], new TGLayoutHints(kLHintsCenterX | kLHintsCenterY, 5, 5, 3, 4));
     
     col++;
@@ -92,8 +94,14 @@ MainSettings::MainSettings(const TGWindow *p, UInt_t w, UInt_t h, Pixie16 * pixi
     cbOnOff[i]->AddEntry("ON", 1);
     cbOnOff[i]->AddEntry("off", 0);
     cbOnOff[i]->Resize(width[col], 20);
-    pixie->GetChannelOnOff(modID, i) ? cbOnOff[i]->Select(1) : cbOnOff[i]->Select(0);
-    cbOnOff[i]->Connect("Selected(Int_t, Int_t)", "MainSettings", this, Form("ChangeOnOff(=%d)", i));  
+    if( pixie->GetChannelOnOff(modID, i) ){
+       cbOnOff[i]->Select(1);
+       lbCh[i]->SetTextColor(red);
+    }else{
+       cbOnOff[i]->Select(0);
+       lbCh[i]->SetTextColor(black);
+    }
+    cbOnOff[i]->Connect("Selected(Int_t, Int_t)", "SettingsSummary", this, Form("ChangeOnOff(=%d)", i));  
     hframeCh[i]->AddFrame(cbOnOff[i], new TGLayoutHints(kLHintsCenterX | kLHintsCenterY, 5, 5, 3, 4));
 
     col++;
@@ -102,28 +110,28 @@ MainSettings::MainSettings(const TGWindow *p, UInt_t w, UInt_t h, Pixie16 * pixi
     cbGain[i]->AddEntry("x1/4", 0);
     cbGain[i]->Resize(width[col], 20);
     pixie->GetChannelGain(modID, i) ? cbGain[i]->Select(1) : cbGain[i]->Select(0);
-    cbGain[i]->Connect("Selected(Int_t, Int_t)", "MainSettings", this, Form("ChangeGain(=%d)", i));  
+    cbGain[i]->Connect("Selected(Int_t, Int_t)", "SettingsSummary", this, Form("ChangeGain(=%d)", i));  
     hframeCh[i]->AddFrame(cbGain[i], new TGLayoutHints(kLHintsCenterX | kLHintsCenterY, 5, 5, 3, 4));
 
     col++;
     neTrigL[i] = new TGNumberEntry(hframeCh[i], pixie->GetChannelTriggerRiseTime(modID, i), 0, 0, TGNumberFormat::kNESRealTwo, TGNumberFormat::kNEANonNegative);
     neTrigL[i]->SetWidth(width[col]);
     neTrigL[i]->SetLimits(TGNumberFormat::kNELLimitMinMax, 0, 2.0);
-    neTrigL[i]->Connect("Modified()", "MainSettings", this, Form("ChangeTrigL(=%d)", i)); 
+    neTrigL[i]->Connect("Modified()", "SettingsSummary", this, Form("ChangeTrigL(=%d)", i)); 
     hframeCh[i]->AddFrame(neTrigL[i], new TGLayoutHints(kLHintsCenterX , 5, 5, 3, 4));
 
     col++;
     neTrigG[i] = new TGNumberEntry(hframeCh[i], pixie->GetChannelTriggerFlatTop(modID, i), 0, 0, TGNumberFormat::kNESRealTwo, TGNumberFormat::kNEANonNegative);
     neTrigG[i]->SetWidth(width[col]);
     neTrigG[i]->SetLimits(TGNumberFormat::kNELLimitMinMax, 0, 2.0);
-    neTrigG[i]->Connect("Modified()", "MainSettings", this, Form("ChangeTrigG(=%d)", i)); 
+    neTrigG[i]->Connect("Modified()", "SettingsSummary", this, Form("ChangeTrigG(=%d)", i)); 
     hframeCh[i]->AddFrame(neTrigG[i], new TGLayoutHints(kLHintsCenterX , 5, 5, 3, 4));
     
     col++;
     neThreshold[i] = new TGNumberEntry(hframeCh[i], pixie->GetChannelTriggerThreshold(modID, i), 0, 0, TGNumberFormat::kNESInteger, TGNumberFormat::kNEANonNegative);
     neThreshold[i]->SetWidth(width[col]);
     neThreshold[i]->SetLimits(TGNumberFormat::kNELLimitMinMax, 0, 4000);
-    neThreshold[i]->Connect("Modified()", "MainSettings", this, Form("ChangeThreshold(=%d)", i));  
+    neThreshold[i]->Connect("Modified()", "SettingsSummary", this, Form("ChangeThreshold(=%d)", i));  
     hframeCh[i]->AddFrame(neThreshold[i], new TGLayoutHints(kLHintsCenterX , 5, 5, 3, 4));
     
     col++;
@@ -132,28 +140,28 @@ MainSettings::MainSettings(const TGWindow *p, UInt_t w, UInt_t h, Pixie16 * pixi
     cbPol[i]->AddEntry("Neg -", 0);
     cbPol[i]->Resize(width[col], 20);
     pixie->GetChannelPolarity(modID, i) ? cbPol[i]->Select(1) : cbPol[i]->Select(0);
-    cbPol[i]->Connect("Selected(Int_t, Int_t)", "MainSettings", this, Form("ChangePol(=%d)", i));  
+    cbPol[i]->Connect("Selected(Int_t, Int_t)", "SettingsSummary", this, Form("ChangePol(=%d)", i));  
     hframeCh[i]->AddFrame(cbPol[i], new TGLayoutHints(kLHintsCenterX | kLHintsCenterY, 5, 5, 3, 4));
     
     col++;
     neEngL[i] = new TGNumberEntry(hframeCh[i], pixie->GetChannelEnergyRiseTime(modID, i), 0, 0, TGNumberFormat::kNESRealOne, TGNumberFormat::kNEANonNegative);
     neEngL[i]->SetWidth(width[col]);
     neEngL[i]->SetLimits(TGNumberFormat::kNELLimitMinMax, 0, 10.0);
-    neEngL[i]->Connect("Modified()", "MainSettings", this, Form("ChangeEngL(=%d)", i));  
+    neEngL[i]->Connect("Modified()", "SettingsSummary", this, Form("ChangeEngL(=%d)", i));  
     hframeCh[i]->AddFrame(neEngL[i], new TGLayoutHints(kLHintsCenterX , 5, 5, 3, 4));
     
     col++;
     neEngG[i] = new TGNumberEntry(hframeCh[i], pixie->GetChannelEnergyFlatTop(modID, i), 0, 0, TGNumberFormat::kNESRealOne, TGNumberFormat::kNEANonNegative);
     neEngG[i]->SetWidth(width[col]);
     neEngG[i]->SetLimits(TGNumberFormat::kNELLimitMinMax, 0, 10.0);
-    neEngG[i]->Connect("Modified()", "MainSettings", this, Form("ChangeEngG(=%d)", i));  
+    neEngG[i]->Connect("Modified()", "SettingsSummary", this, Form("ChangeEngG(=%d)", i));  
     hframeCh[i]->AddFrame(neEngG[i], new TGLayoutHints(kLHintsCenterX , 5, 5, 3, 4));
 
     col++;
     neTau[i] = new TGNumberEntry(hframeCh[i], pixie->GetChannelEnergyTau(modID, i), 0, 0, TGNumberFormat::kNESRealTwo, TGNumberFormat::kNEANonNegative);
     neTau[i]->SetWidth(width[col]);
     neTau[i]->SetLimits(TGNumberFormat::kNELLimitMinMax, 0, 300.0);
-    neTau[i]->Connect("Modified()", "MainSettings", this, Form("ChangeTau(=%d)", i));  
+    neTau[i]->Connect("Modified()", "SettingsSummary", this, Form("ChangeTau(=%d)", i));  
     hframeCh[i]->AddFrame(neTau[i], new TGLayoutHints(kLHintsCenterX , 5, 5, 3, 4));
   
     col++;
@@ -162,7 +170,7 @@ MainSettings::MainSettings(const TGWindow *p, UInt_t w, UInt_t h, Pixie16 * pixi
     neTraceLength[i] = new TGNumberEntry(hframeCh[i], tracelen, 0, 0, TGNumberFormat::kNESRealTwo, TGNumberFormat::kNEANonNegative);
     neTraceLength[i]->SetWidth(width[col]);
     neTraceLength[i]->SetLimits(TGNumberFormat::kNELLimitMinMax, 0, 20.0);
-    neTraceLength[i]->Connect("Modified()", "MainSettings", this, Form("ChangeTraceLenght(=%d)", i));     
+    neTraceLength[i]->Connect("Modified()", "SettingsSummary", this, Form("ChangeTraceLenght(=%d)", i));     
     hframeCh[i]->AddFrame(neTraceLength[i], new TGLayoutHints(kLHintsCenterX , 5, 5, 3, 4));
     
     col++;
@@ -171,21 +179,21 @@ MainSettings::MainSettings(const TGWindow *p, UInt_t w, UInt_t h, Pixie16 * pixi
     neTraceDelay[i] = new TGNumberEntry(hframeCh[i], tracedel, 0, 0, TGNumberFormat::kNESRealTwo, TGNumberFormat::kNEANonNegative);
     neTraceDelay[i]->SetWidth(width[col]);
     neTraceDelay[i]->SetLimits(TGNumberFormat::kNELLimitMinMax, 0, 20.0);
-    neTraceDelay[i]->Connect("Modified()", "MainSettings", this, Form("ChangeTraceDelay(=%d)", i)); 
+    neTraceDelay[i]->Connect("Modified()", "SettingsSummary", this, Form("ChangeTraceDelay(=%d)", i)); 
     hframeCh[i]->AddFrame(neTraceDelay[i], new TGLayoutHints(kLHintsCenterX , 5, 5, 3, 4));
     
     col++;
     neVoff[i] = new TGNumberEntry(hframeCh[i], pixie->GetChannelVOffset(modID, i), 0, 0, TGNumberFormat::kNESRealTwo, TGNumberFormat::kNEAAnyNumber);
     neVoff[i]->SetWidth(width[col]);
     neVoff[i]->SetLimits(TGNumberFormat::kNELLimitMinMax, -2, 2);
-    neVoff[i]->Connect("Modified()", "MainSettings", this, Form("ChangeVoff(=%d)", i)); 
+    neVoff[i]->Connect("Modified()", "SettingsSummary", this, Form("ChangeVoff(=%d)", i)); 
     hframeCh[i]->AddFrame(neVoff[i], new TGLayoutHints(kLHintsCenterX , 5, 5, 3, 4));
     
     col++;
     neBL[i] = new TGNumberEntry(hframeCh[i], pixie->GetChannelBaseLinePrecent(modID, i), 0, 0, TGNumberFormat::kNESInteger, TGNumberFormat::kNEANonNegative);
     neBL[i]->SetWidth(width[col]);
     neBL[i]->SetLimits(TGNumberFormat::kNELLimitMinMax, 0, 100);
-    neBL[i]->Connect("Modified()", "MainSettings", this, Form("ChangeBL(=%d)", i)); 
+    neBL[i]->Connect("Modified()", "SettingsSummary", this, Form("ChangeBL(=%d)", i)); 
     hframeCh[i]->AddFrame(neBL[i], new TGLayoutHints(kLHintsCenterX , 5, 5, 3, 4));
   }
   
@@ -195,9 +203,10 @@ MainSettings::MainSettings(const TGWindow *p, UInt_t w, UInt_t h, Pixie16 * pixi
 }
 
 
-MainSettings::~MainSettings(){
+SettingsSummary::~SettingsSummary(){
   
   for (int i = 0; i< MAXCH; i++) {
+    delete lbCh[i];
     delete cbOnOff[i] ;
     delete cbGain[i] ;
     delete cbPol[i] ;
@@ -223,68 +232,73 @@ MainSettings::~MainSettings(){
 }
 
 
-void MainSettings::ChangeOnOff(unsigned short ch){
+void SettingsSummary::ChangeOnOff(unsigned short ch){
   short modID = modIDEntry->GetNumber();
   int val = cbOnOff[ch]->GetSelected();
   pixie->SetChannelOnOff(val, modID, ch);
+  if( val ) {
+    lbCh[ch]->SetTextColor(red);
+  }else{
+    lbCh[ch]->SetTextColor(black);
+  }
   teFileName->SetText(settingFileName + "  (not saved)");
 }
-void MainSettings::ChangeGain(unsigned short ch){
+void SettingsSummary::ChangeGain(unsigned short ch){
   short modID = modIDEntry->GetNumber();
   int val = cbGain[ch]->GetSelected();
   pixie->SetChannelGain(val, modID, ch);
   teFileName->SetText(settingFileName + "  (not saved)");
 }
 
-void MainSettings::ChangePol(unsigned short ch){
+void SettingsSummary::ChangePol(unsigned short ch){
   short modID = modIDEntry->GetNumber();
   int val = cbPol[ch]->GetSelected();
   pixie->SetChannelPositivePolarity(val, modID, ch);
   teFileName->SetText(settingFileName + "  (not saved)");
 }
 
-void MainSettings::ChangeTrigL(unsigned short ch){
+void SettingsSummary::ChangeTrigL(unsigned short ch){
   short modID = modIDEntry->GetNumber();
   double val = neTrigL[ch]->GetNumber();  
   pixie->SetChannelTriggerRiseTime(val, modID, ch);
   teFileName->SetText(settingFileName + "  (not saved)");
 }
 
-void MainSettings::ChangeTrigG(unsigned short ch){
+void SettingsSummary::ChangeTrigG(unsigned short ch){
   short modID = modIDEntry->GetNumber();
   double val = neTrigG[ch]->GetNumber();  
   pixie->SetChannelTriggerFlatTop(val, modID, ch);
   teFileName->SetText(settingFileName + "  (not saved)");
 }
-void MainSettings::ChangeThreshold(unsigned short ch){
+void SettingsSummary::ChangeThreshold(unsigned short ch){
   short modID = modIDEntry->GetNumber();
   double val = neThreshold[ch]->GetNumber();  
   pixie->SetChannelTriggerThreshold(val, modID, ch);
   teFileName->SetText(settingFileName + "  (not saved)");
 }
 
-void MainSettings::ChangeEngL(unsigned short ch){
+void SettingsSummary::ChangeEngL(unsigned short ch){
   short modID = modIDEntry->GetNumber();
   double val = neEngL[ch]->GetNumber();  
   pixie->SetChannelEnergyRiseTime(val, modID, ch);
   teFileName->SetText(settingFileName + "  (not saved)");
 }
 
-void MainSettings::ChangeEngG(unsigned short ch){
+void SettingsSummary::ChangeEngG(unsigned short ch){
   short modID = modIDEntry->GetNumber();
   double val = neEngG[ch]->GetNumber();
   pixie->SetChannelEnergyFlatTop(val, modID, ch);  
   teFileName->SetText(settingFileName + "  (not saved)");
 }
 
-void MainSettings::ChangeTau(unsigned short ch){
+void SettingsSummary::ChangeTau(unsigned short ch){
   short modID = modIDEntry->GetNumber();
   double val = neTau[ch]->GetNumber();  
   pixie->SetChannelEnergyTau(val, modID, ch);
   teFileName->SetText(settingFileName + "  (not saved)");
 }
 
-void MainSettings::ChangeTraceLenght(unsigned short ch){
+void SettingsSummary::ChangeTraceLenght(unsigned short ch){
   short modID = modIDEntry->GetNumber();
   double val = neTraceLength[ch]->GetNumber();  
   if( val > 0 ){
@@ -298,7 +312,7 @@ void MainSettings::ChangeTraceLenght(unsigned short ch){
   teFileName->SetText(settingFileName + "  (not saved)");
 }
 
-void MainSettings::ChangeTraceDelay(unsigned short ch){
+void SettingsSummary::ChangeTraceDelay(unsigned short ch){
   short modID = modIDEntry->GetNumber();
   double val = neTraceDelay[ch]->GetNumber();  
 
@@ -313,14 +327,14 @@ void MainSettings::ChangeTraceDelay(unsigned short ch){
   teFileName->SetText(settingFileName + "  (not saved)");
 }
 
-void MainSettings::ChangeVoff(unsigned short ch){
+void SettingsSummary::ChangeVoff(unsigned short ch){
   short modID = modIDEntry->GetNumber();
   double val = neVoff[ch]->GetNumber();  
   pixie->SetChannelVOffset(val, modID, ch);
   teFileName->SetText(settingFileName + "  (not saved)");
 }
 
-void MainSettings::ChangeBL(unsigned short ch){
+void SettingsSummary::ChangeBL(unsigned short ch){
   short modID = modIDEntry->GetNumber();
   double val = neBL[ch]->GetNumber();  
   pixie->SetChannelBaseLinePrecent(val, modID, ch);
@@ -328,13 +342,13 @@ void MainSettings::ChangeBL(unsigned short ch){
 }
 
 
-void MainSettings::ChangeMod(){
+void SettingsSummary::ChangeMod(){
   short modID = modIDEntry->GetNumber();
   settingFileName = pixie->GetSettingFile(modID);
   teFileName->SetText(settingFileName);
 }
 
-void MainSettings::OpenFile(){
+void SettingsSummary::OpenFile(){
   
   static TString dir(".");
   TGFileInfo fi;
@@ -352,7 +366,7 @@ void MainSettings::OpenFile(){
   dir = fi.fIniDir;  
 }
 
-void MainSettings::SaveSetting(){
+void SettingsSummary::SaveSetting(){
   printf("save button is pressed.\n");
   pixie->SaveSettings(settingFileName.Data());
   

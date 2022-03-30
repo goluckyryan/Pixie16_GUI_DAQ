@@ -34,6 +34,12 @@
 #include "TRootCanvas.h"
 
 
+#include <thread>
+#include <unistd.h>
+
+
+#include "evtReader.h"
+
 long get_time();
 static struct termios g_old_kbd_mode;
 static void cooked(void);  ///set keyboard behaviour as wait-for-enter
@@ -43,6 +49,13 @@ int getch(void);
 int keyboardhit();
 
 bool QuitFlag = false;
+
+Pixie16 * pixie = 0;
+TGraph * gTrace = 0;
+TCanvas * canvas = 0;
+TH1F * hch = 0;
+TH1F * hE =  0;
+int ch2ns;
 
 void PrintCommands(){
   
@@ -58,13 +71,106 @@ void PrintCommands(){
 
 }
 
+void GetADCTrace(int ch){
+  
+  pixie->CaptureADCTrace(0, ch);
+  unsigned short * haha =  pixie->GetADCTrace();
+  double dt = pixie->GetChannelSetting("XDT", 0, ch); 
+  for( int i = 0 ; i < pixie->GetADCTraceLength(); i++){
+    gTrace->SetPoint(i, i*dt, haha[i]);
+  }
+  gTrace->GetXaxis()->SetTitle("time [us]");
+  canvas->cd(3); gTrace->Draw("APL");
+
+}
+
+void GetBaseline(int ch){
+  
+  pixie->CaptureBaseLine(0, ch);
+  double * baseline = pixie->GetBasline();
+  double * baselineTime = pixie->GetBaselineTimestamp();
+  for( int i = 0 ; i < pixie->GetBaslineLength(); i++){
+    gTrace->SetPoint(i, baselineTime[i]*1000, baseline[i]);
+    //printf("%5d | %f, %f \n", i, baselineTime[i]*1000, baseline[i]);
+  }
+  canvas->cd(2); gTrace->Draw("APL");
+  
+}
+
+
+void ProcessData(){
+  
+  printf("========== new thread of processing data\n");
+  
+  evtReader * evt = new evtReader("haha.evt");
+  DataBlock * data = evt->data;
+  
+  int jaja = 0;
+  
+  while(true){  
+    
+    evt->UpdateFileSize();
+    
+    while( evt->GetFileSize() > 0 && evt->GetFileSize() > evt->GetFilePos()  ){
+      
+      int status = evt->ReadBlock();
+      
+      
+      //printf("%d, %ld, %ld, %lld\n", status, evt->GetFilePos(), evt->GetFileSize(), evt->GetBlockID());
+      //data->Print(0);
+      
+      hch->Fill( data->ch);
+      hE->Fill( data->energy );
+      
+      if( data->eventID %100 == 0 ){
+        if( data->trace_length > 0 ) {
+          for( int i = 0 ; i < data->trace_length; i++){
+            gTrace->SetPoint(i, i*ch2ns, data->trace[i]);
+          }
+          //gTrace->GetYaxis()->SetRangeUser(0, 5000);
+          canvas->cd(3); gTrace->Draw("APL");        
+        }
+      }
+      
+      if( data->eventID %200 == 0 ){
+        //data->Print(0);
+        canvas->cd(1); hch->Draw();
+        canvas->cd(2); hE->Draw();
+        canvas->Modified();
+        canvas->Update();
+        gSystem->ProcessEvents();
+      }
+      
+    }
+    
+    usleep(500*1000);
+    evt->UpdateFileSize();
+    
+    jaja++;
+    //printf("%10d, %d, %ld, %ld \n", jaja, pixie->IsRunning(), evt->GetFilePos(), evt->GetFileSize());
+    //if( jaja > 1000) break;
+    if( !pixie->IsRunning() && evt->GetFilePos() == evt->GetFileSize()) break;
+    
+  }
+  
+  
+  
+  printf("========= finished ProcessData()\n");
+  canvas->cd(1); hch->Draw();
+  canvas->cd(2); hE->Draw();
+  canvas->Modified();
+  canvas->Update();
+  gSystem->ProcessEvents();
+  
+}
+
 ///##################################################
 int main(int argc, char *argv[]){
   
   printf("Removing Pixie16Msg.log \n");
   remove( "Pixie16Msg.log");
 
-  Pixie16 * pixie = new Pixie16();
+  pixie = new Pixie16();
   if ( pixie->GetStatus() < 0 ) {
     QuitFlag = true;
     printf("Exiting program... \n");
@@ -73,16 +179,15 @@ int main(int argc, char *argv[]){
   
   TApplication * app = new TApplication("app", &argc, argv); 
   
-  TCanvas * canvas = new TCanvas("canvas", "Canvas", 1800, 400);
+  canvas = new TCanvas("canvas", "Canvas", 1800, 400);
   canvas->Divide(3,1);
   
-  TH1F * hch = new TH1F("hch", "channel", 16, 0, 16);
-  TH1F * hE = new TH1F("hE", "energy", 400, 0, 30000);
-  TGraph * gTrace = new TGraph();
+  hch = new TH1F("hch", "channel", 16, 0, 16);
+  hE = new TH1F("hE", "energy", 400, 0, 30000);
+  gTrace = new TGraph();
   
-  int ch2ns = pixie->GetCh2ns(0);
+  ch2ns = pixie->GetCh2ns(0);
   gTrace->GetXaxis()->SetTitle("time [ns]");
-  
   
   //pixie->SetDigitizerPresetRunTime(100000, 0);
   //pixie->SetDigitizerSynchWait(0, 0); // not simultaneously
@@ -90,27 +195,10 @@ int main(int argc, char *argv[]){
   
   pixie->PrintDigitizerSettings(0);
 
-  /*
-  pixie->GetPolarity(0, 6, 1);
-  pixie->SetPolarity(false, 0, 6);
-  pixie->GetPolarity(0, 6, 1);
-  pixie->SetPolarity(true, 0, 6);
-  pixie->GetPolarity(0, 6, 1);
-  */
-
   int ch = 6;
-  double time = 1.0; ///sec
+  double time = 10.0; ///sec
   
-  /*
-  for( int i = 0; i < 16; i++){
-      pixie->SetChannelTriggerThreshold(5000, 0, i);
-      pixie->SetChannelOnOff(false, 0, i);
-      pixie->SetChannelTraceOnOff(false, 0, i);
-      pixie->SetChannelVOffset(0, 0, i);
-  }
-  * */
   //pixie->AdjustOffset();
-  
   
   //pixie->SetChannelEnergyRiseTime(2, 0, ch);
   //pixie->SetChannelTriggerThreshold(300, 0, ch);
@@ -128,94 +216,46 @@ int main(int argc, char *argv[]){
   
   pixie->PrintChannelAllSettings(0, ch);
   
-  pixie->PrintChannelsMainSettings(0);
+  pixie->PrintChannelSettingsSummary(0);
   
-  
-  //pixie->CaptureADCTrace(0, ch);
-  //unsigned short * haha =  pixie->GetADCTrace();
-  //double dt = pixie->GetChannelSetting("XDT", 0, ch); 
-  //for( int i = 0 ; i < pixie->GetADCTraceLength(); i++){
-  //  gTrace->SetPoint(i, i*dt, haha[i]);
-  //}
-  //gTrace->GetXaxis()->SetTitle("time [us]");
-  //canvas->cd(3); gTrace->Draw("APL");
-  
-  
-  
-  //pixie->CaptureBaseLine(0, ch);
-  //double * baseline = pixie->GetBasline();
-  //double * baselineTime = pixie->GetBaselineTimestamp();
-  //for( int i = 0 ; i < pixie->GetBaslineLength(); i++){
-  //  gTrace->SetPoint(i, baselineTime[i]*1000, baseline[i]);
-  //  //printf("%5d | %f, %f \n", i, baselineTime[i]*1000, baseline[i]);
-  //}
-  //canvas->cd(2); gTrace->Draw("APL");
-  
-
   pixie->OpenFile("haha.evt", false);
   
   printf("start run for %f sec\n", time);
   
   uint32_t StartTime = get_time(), CurrentTime = get_time();
+  uint32_t ElapsedTime = 0, PresenTime = StartTime;
+  
   pixie->StartRun(1);
   
-  DataBlock * data = pixie->GetData();
+  std::thread kakakaka(ProcessData);
   
   while( CurrentTime - StartTime < time * 1000 ){
     
     pixie->ReadData(0);
     pixie->SaveData();  
     
-    while( pixie->GetNextWord() < pixie->GetnFIFOWords() ){
-
-      //if( data->eventID %100 == 99 ) pixie->PrintExtFIFOWords();
-      bool breakFlag = pixie->ProcessSingleData();
-
-      //data->Print(0);
-      //printf("--------------next  word : %d (%d) | event lenght : %d \n", pixie->GetNextWord(), pixie->GetnFIFOWords(),  data->eventLength);
-      
-        hch->Fill( data->ch);
-        hE->Fill( data->energy );
-        
-        if( data->eventID %10 == 0 ){
-          if( data->trace_length > 0 ) {
-            for( int i = 0 ; i < data->trace_length; i++){
-              gTrace->SetPoint(i, i*ch2ns, data->trace[i]);
-            }
-            //gTrace->GetYaxis()->SetRangeUser(0, 5000);
-            canvas->cd(3); gTrace->Draw("APL");        
-          }
-        }
-        
-        if( data->eventID %100 == 0 ){
-          //data->Print(0);
-          canvas->cd(1); hch->Draw();
-          canvas->cd(2); hE->Draw();
-          canvas->Modified();
-          canvas->Update();
-          gSystem->ProcessEvents();
-        }
-        if( breakFlag ) break;
+    if( ElapsedTime > 1000 ) {
+        pixie->PrintStatistics(0);
+        PresenTime = CurrentTime;
+        ElapsedTime = 0;
     }
     
     CurrentTime = get_time();
+    
+    ElapsedTime = CurrentTime - PresenTime;
+    
   }
   
   pixie->StopRun();
   pixie->CloseFile();
   
-  canvas->cd(1); hch->Draw();
-  canvas->cd(2); hE->Draw();
-  canvas->Modified();
-  canvas->Update();
-  gSystem->ProcessEvents();
-  
-  //pixie->PrintData();
-  
-  
   printf("===================================\n");
   pixie->PrintStatistics(0);
+  
+  unsigned int haha = pixie->GetTotalNumWords();
+  printf("=========== total nFIFO words : %d (%f) \n", haha, haha/1256.);
 
+  //kakakaka.join();
   
   //pixie->SaveSettings("/home/ryan/Pixie16/ryan/test_ryan.set");
   
@@ -303,13 +343,15 @@ int main(int argc, char *argv[]){
     }
     
   }
-  /**/
+  */
 
   
   //delete pixie;
   
   app->Run();
   
+  QuitFlag = true;
+
   printf("================ end of program. \n");
   return 0;
 }

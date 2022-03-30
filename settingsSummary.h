@@ -1,11 +1,12 @@
-#ifndef MAIN_SETTING_H
-#define MAIN_SETTING_H
+#ifndef SETTINGS_SUMMARY_H
+#define SETTINGS_SUMMARY_H
 
 #include <TQObject.h>
 ///#include <RQ_OBJECT.h>
 
 #include <TGNumberEntry.h>
 #include <TGComboBox.h>
+#include <TGLabel.h>
 
 #include "Pixie16Class.h"
 
@@ -14,8 +15,8 @@ class TGMainFrame;
 
 #define MAXCH 16
 
-class MainSettings{
-///   RQ_OBJECT("MainSettings")
+class SettingsSummary{
+///   RQ_OBJECT("SettingsSummary")
 private:
   TGMainFrame * fMain;
   
@@ -29,6 +30,7 @@ private:
   TGComboBox * cbGain[MAXCH] ;
   TGComboBox * cbPol[MAXCH] ;
 
+  TGLabel * lbCh[MAXCH];
   TGNumberEntry * neTrigL[MAXCH] ; 
   TGNumberEntry * neTrigG[MAXCH] ; 
   TGNumberEntry * neThreshold[MAXCH] ;
@@ -42,11 +44,15 @@ private:
   
   Pixie16 * pixie;
   
+  Pixel_t red;
+  Pixel_t black;
+  
+  
   int maxCh;
 
 public:
-  MainSettings(const TGWindow *p, UInt_t w, UInt_t h, Pixie16 * pixie);
-  virtual ~MainSettings();
+  SettingsSummary(const TGWindow *p, UInt_t w, UInt_t h, Pixie16 * pixie);
+  virtual ~SettingsSummary();
 
   
   void CloseWindow() { printf("close window\n"); delete this; }

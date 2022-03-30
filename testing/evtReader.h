@@ -1,18 +1,15 @@
 #ifndef EVTREADER_H
 #define EVTREADER_H
 
-#include <stdio.h>
+#include <stdio.h> /// for FILE
 #include <iostream>
 #include <fstream>
 #include <stdlib.h>
 #include <string.h>
 
-#include "TSystem.h"
-#include "TObject.h"
-#include "TFile.h"
-#include "TTree.h"
 #include "TString.h"
 #include "TBenchmark.h"
+#include "TMath.h"
 
 #include "../DataBlock.h"
 
@@ -40,6 +37,9 @@ class evtReader{
     unsigned int traceBlock[MAX_TRACE_LENGHT/2];
     
     TBenchmark gClock;
+    
+    long int inFilePosPrecent[10];
+    Long64_t blockIDPrecent[10];
 
   ///============================================ Methods
   public:
@@ -49,7 +49,8 @@ class evtReader{
     ~evtReader();
     
     void OpenFile(TString inFileName);
-    
+    void CloseFile();    
+
     void UpdateFileSize();
     bool IsEndOfFile();
     
@@ -59,10 +60,12 @@ class evtReader{
     Long64_t GetBlockID()       {return blockID;}
     Long64_t GetNumberOfBlock() {return nBlock;}
     
+    
     int ReadBlock(int opt = 0);  /// 0 = default, fill data
                                  /// 1 = no fill data
 
     void ScanNumberOfBlock();
+    void JumptoPrecent(int precent); ///this is offset by 1 block
     void PrintStatus(int mod);
     
 };
@@ -81,6 +84,7 @@ evtReader::evtReader(){
   blockID    = -1;
   endOfFile  = false;
   isOpened   = false;
+  
 }
 
   
@@ -122,6 +126,17 @@ void evtReader::OpenFile(TString inFileName){
     
     isOpened = true;
   }
+};
+
+void evtReader::CloseFile(){
+  fclose(inFile);
+  isOpened = false;
+  data->Clear();
+  inFileSize = 0;
+  inFilePos  = 0;
+  nBlock     = 0;    
+  blockID    = -1;
+  endOfFile  = false;
 };
 
 void evtReader::UpdateFileSize(){
@@ -242,8 +257,16 @@ int evtReader::ReadBlock(int opt){
 void evtReader::ScanNumberOfBlock(){
   
   nBlock = 0;
+  int count = 0;
   while( ReadBlock(1) != -1 ){
     nBlock ++;
+    int haha = (inFilePos*10/inFileSize)%10;
+    if(  haha == count ) {
+      inFilePosPrecent[count] = inFilePos;
+      blockIDPrecent[count] = blockID;
+      count++;
+    }
+
     PrintStatus(10000);
   }
   
@@ -258,6 +281,17 @@ void evtReader::ScanNumberOfBlock(){
   
 }
 
+void evtReader::JumptoPrecent(int precent){
+  
+  if( precent < 0 || precent > 10 ) {
+    printf("input precent should be 0 to 10\n");
+    return;
+  } 
+  
+  fseek(inFile, inFilePosPrecent[precent], SEEK_SET);
+  blockID = blockIDPrecent[precent];
+  
+}
 
 void evtReader::PrintStatus(int mod){
   

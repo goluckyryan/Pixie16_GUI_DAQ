@@ -1,6 +1,6 @@
 PLXBASE = /usr/opt/PlxSdk/PlxApi/Library/
 CC = g++
-CFLAGS = -c -Wall
+CFLAGS = -c -Wall -lpthread
 LDFLAGS = -ldl -lm
 ROOT_FLAG = `root-config --cflags --glibs`
 
@@ -29,12 +29,15 @@ APIBASE = /usr/opt/xia/PixieSDK/lib/
 LIBS = $(APIBASE)libPixie16Api.so $(APIBASE)libPixieSDK.a $(PLXBASE)PlxApi.a
 
 
+OBJS = pixieDAQ.o Pixie16Class.o settingsSummary.o scalarPanel.o
+
+
 all: testing/test testing/example  pixieDAQ
 
 #--------------------------
-pixieDAQ : pixieDAQ.o pixieDict.o pixieDict.cxx Pixie16Class.o mainSettings.o
+pixieDAQ :  pixieDict.cxx $(OBJS)
 	@echo "-------- making pixieDAQ "
-	$(CC) $(PIXIE_LIB_PATH) pixieDAQ.o Pixie16Class.o mainSettings.o pixieDict.cxx $(LIBS) -o pixieDAQ $(ROOT_FLAG)
+	$(CC) $(PIXIE_LIB_PATH) $(OBJS) pixieDict.cxx $(LIBS) -o pixieDAQ $(ROOT_FLAG)
 
 #--------------------------#need to export LD_LIBRARY_PATH
 Pixie16Class.o : Pixie16Class.h Pixie16Class.cpp DataBlock.h
@@ -49,10 +52,13 @@ pixieDAQ.o : pixieDict.cxx pixieDAQ.cpp pixieDAQ.h
 	@echo "--------- creating pixieDAQ.o"
 	$(CC) $(CFLAGS) $(PIXIE_LIB_PATH) pixieDAQ.cpp Pixie16Class.cpp pixieDict.cxx $(ROOT_FLAG)
 
-mainSettings.o : mainSettings.cpp mainSettings.h
-	@echo "--------- creating mainSettings.o"
-	$(CC) $(CFLAGS) $(PIXIE_LIB_PATH) mainSettings.cpp $(ROOT_FLAG)
+settingsSummary.o : settingsSummary.cpp settingsSummary.h
+	@echo "--------- creating settingsSummary.o"
+	$(CC) $(CFLAGS) $(PIXIE_LIB_PATH) settingsSummary.cpp $(ROOT_FLAG)
 
+scalarPanel.o : scalarPanel.cpp scalarPanel.h
+	@echo "--------- creating scalarPanel.o.o"
+	$(CC) $(CFLAGS) $(PIXIE_LIB_PATH) scalarPanel.cpp $(ROOT_FLAG)
 
 #--------------------------
 testing/example : testing/example.o 

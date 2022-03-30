@@ -50,6 +50,7 @@ Pixie16::Pixie16(){
       BootDigitizers();
 
       nFIFOWords = 0;
+      totNumFIFOWords = 0;
       ExtFIFO_Data = NULL;
       Statistics = NULL;
       
@@ -369,6 +370,8 @@ void Pixie16::StartRun(bool listMode){
   
   if( listMode ){
     ///listmode
+    totNumFIFOWords = 0;
+    nextWord = 0;
     retval = Pixie16StartListModeRun(NumModules, LIST_MODE_RUN, mode);
     if( CheckError("Pixie16StartListModeRun") < 0 ) return;
     printf("\033[32m LIST_MODE run\033[0m\n");
@@ -403,11 +406,12 @@ void Pixie16::ReadData(unsigned short modID){
     if( CheckError("Pixie16CheckExternalFIFOStatus") < 0 ) return;
     ///if(nFIFOWords *1.0 / EXTERNAL_FIFO_LENGTH > 0.2) {
     if(nFIFOWords  > 0) {
-      printf("\033[1;31m####### READ DATA \033[m: number of word in module-%d FIFO : %d \n", modID, nFIFOWords);
+      //printf("\033[1;31m####### READ DATA \033[m: number of word in module-%d FIFO : %d \n", modID, nFIFOWords);
       if( ExtFIFO_Data != NULL ) delete ExtFIFO_Data;
       ExtFIFO_Data = new unsigned int [nFIFOWords];
       retval = Pixie16ReadDataFromExternalFIFO(ExtFIFO_Data, nFIFOWords, modID);
       CheckError("Pixie16ReadDataFromExternalFIFO");
+      totNumFIFOWords += nFIFOWords;
     }
   }else{
     printf("Pixie16 is not running.\n");
@@ -459,6 +463,7 @@ bool Pixie16::ProcessSingleData(){
   return breakProcessLoopFlag ; 
 
 }
+
 
 unsigned int Pixie16::GetDigitizerSetting(std::string parName, unsigned short modID, bool verbose){
   unsigned int ParData;
@@ -630,7 +635,7 @@ void Pixie16::PrintChannelAllSettings(unsigned short modID, unsigned short ch){
   printf("=====================================\n");
  }
 
-void Pixie16::PrintChannelsMainSettings(unsigned short modID){
+void Pixie16::PrintChannelSettingsSummary(unsigned short modID){
 
   printf("====+=====+======+========+========+===========+==========+==========+==========+=======+=========+=========+=======+====== \n");  
   printf(" ch | En  | Gain | Trig_L | Trig_G | Threshold | Polarity | Energy_L | Energy_G | Tau   | Trace   | Trace_d |  Voff | BL \n");
@@ -740,6 +745,8 @@ void Pixie16::PrintStatistics(unsigned short modID){
       printf(" %7d |", (int) (ICR * liveTime) );
       printf(" %7d \n", (int) (OCR * realTime) );
     }
+
+    
   }
 }
 

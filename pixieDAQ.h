@@ -5,16 +5,18 @@
 #include <TClass.h>
 #include <TGClient.h>
 #include <TGMenu.h>
+#include <TGTextEdit.h>
+#include <TThread.h>
 
 #include "Pixie16Class.h"
-#include "mainSettings.h"
+#include "settingsSummary.h"
 
 class TGWindow;
 class TGMainFrame;
 class TRootEmbeddedCanvas;
 class TGNumberEntry;
 
-class MainWindow {
+class MainWindow{
    RQ_OBJECT("MainWindow")
 private:
    TGMainFrame         *fMain;
@@ -24,10 +26,12 @@ private:
    TGPopupMenu        *fMenuFile, *fMenuSettings;
    
    TGNumberEntry * modIDEntry, *chEntry; 
+   TGTextEntry * tePath;
+   TGTextEdit * teLog;
    
-   Pixie16 * pixie;
+   SettingsSummary * mainSettings;
    
-   MainSettings * mainSettings;
+   TThread * thread;
 
 
 public:
@@ -39,11 +43,18 @@ public:
    
    void openPixie();
    
-   void getADCTrace();
-   void getBaseLine();
+   void GetADCTrace();
+   void GetBaseLine();
+   void Scope();
 
-   void StartRun();
+   void StartRun(); // *SIGNAL*
+
+   static void * SaveData(void* ptr ); /// thread
+
    void StopRun();
+
+
+   void LogMsg(TString msg);
 
    void GoodBye();
 

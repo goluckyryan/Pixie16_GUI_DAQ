@@ -8,6 +8,7 @@ test
 example
 read-set
 
+*.evt
 *.root
 *.cxx
 *.pcm
