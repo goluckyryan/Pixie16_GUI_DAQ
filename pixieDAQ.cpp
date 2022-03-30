@@ -17,7 +17,6 @@
 #include <unistd.h>
 
 #include "Pixie16Class.h"
-static Pixie16 * pixie = new Pixie16();
 
 #include "pixieDAQ.h"
 
@@ -33,9 +32,19 @@ enum MenuIdentifiers{
   
 };
 
+///make static members 
+Pixie16 * MainWindow::pixie = NULL;
+
 MainWindow::MainWindow(const TGWindow *p,UInt_t w,UInt_t h) {
   
-  openPixie();
+  printf("Removing Pixie16Msg.log \n");
+  remove( "Pixie16Msg.log");
+
+  pixie = new Pixie16();
+  if ( pixie->GetStatus() < 0 ) {
+    printf("Exiting program... \n");
+    GoodBye();
+  }
   
   /// Create a main frame
   fMain = new TGMainFrame(p,w,h);
@@ -207,17 +216,6 @@ void MainWindow::HandleMenu(Int_t id){
   
 }
 
-void MainWindow::openPixie(){
-  
-  printf("Removing Pixie16Msg.log \n");
-  remove( "Pixie16Msg.log");
-
-  if ( pixie->GetStatus() < 0 ) {
-    printf("Exiting program... \n");
-    GoodBye();
-  }
-  
-}
 
 void MainWindow::GetADCTrace() {
   printf("--------- get ADCTrace \n");

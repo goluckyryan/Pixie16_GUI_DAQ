@@ -30,6 +30,8 @@ private:
    TGTextEntry * tePath;
    TGTextEdit * teLog;
    
+   static Pixie16 * pixie;
+   
    SettingsSummary * mainSettings;
    
    ScalarPanel * scalarPanel;
@@ -41,10 +43,7 @@ public:
    MainWindow(const TGWindow *p, UInt_t w, UInt_t h);
    virtual ~MainWindow();
    
-   
    void HandleMenu(Int_t id);
-   
-   void openPixie();
    
    void GetADCTrace();
    void GetBaseLine();
