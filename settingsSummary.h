@@ -46,9 +46,10 @@ private:
   
   Pixel_t red;
   Pixel_t black;
-  
-  
+
   int maxCh;
+  
+
 
 public:
   SettingsSummary(const TGWindow *p, UInt_t w, UInt_t h, Pixie16 * pixie);
@@ -74,6 +75,8 @@ public:
   void ChangeMod();
   void OpenFile();
   void SaveSetting();
+  
+  bool isOpened;
   
 };
 

@@ -10,6 +10,7 @@
 
 #include "Pixie16Class.h"
 #include "settingsSummary.h"
+#include "scalarPanel.h"
 
 class TGWindow;
 class TGMainFrame;
@@ -31,6 +32,8 @@ private:
    
    SettingsSummary * mainSettings;
    
+   ScalarPanel * scalarPanel;
+   
    TThread * thread;
 
 
@@ -48,10 +51,10 @@ public:
    void Scope();
 
    void StartRun(); // *SIGNAL*
-
    static void * SaveData(void* ptr ); /// thread
-
    void StopRun();
+
+   void OpenScalar();
 
 
    void LogMsg(TString msg);

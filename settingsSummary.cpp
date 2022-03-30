@@ -66,7 +66,7 @@ SettingsSummary::SettingsSummary(const TGWindow *p, UInt_t w, UInt_t h, Pixie16 
   TGHorizontalFrame * hframeLabel = new TGHorizontalFrame(hframeSettings, w, 50);
   hframeSettings->AddFrame(hframeLabel, new TGLayoutHints(kLHintsExpandX, 2,2,2,2)); 
   
-  TGLabel ** labelItems = new TGLabel * [numItems];
+  TGLabel * labelItems[numItems];
  
   for(int i = 0; i < numItems; i++){
     labelItems[i] = new TGLabel(hframeLabel, Form("%s", labelText[i].Data()));
@@ -75,7 +75,7 @@ SettingsSummary::SettingsSummary(const TGWindow *p, UInt_t w, UInt_t h, Pixie16 
     hframeLabel->AddFrame(labelItems[i], new TGLayoutHints(kLHintsCenterX | kLHintsCenterY, 5, 5, 3, 4));
   }
 
-  TGHorizontalFrame ** hframeCh  = new TGHorizontalFrame * [MAXCH];
+  TGHorizontalFrame * hframeCh[MAXCH];
     
   for( int i = 0; i < MAXCH ; i ++){
 
@@ -200,10 +200,14 @@ SettingsSummary::SettingsSummary(const TGWindow *p, UInt_t w, UInt_t h, Pixie16 
   fMain->MapSubwindows();
   fMain->Resize(fMain->GetDefaultSize());
   fMain->MapWindow();
+  
+  isOpened = true;
 }
 
 
 SettingsSummary::~SettingsSummary(){
+  
+  isOpened = false;
   
   for (int i = 0; i< MAXCH; i++) {
     delete lbCh[i];

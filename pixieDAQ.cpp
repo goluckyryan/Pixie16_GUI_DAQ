@@ -90,42 +90,42 @@ MainWindow::MainWindow(const TGWindow *p,UInt_t w,UInt_t h) {
   chEntry = new TGNumberEntry(hframe1, 0, 0, 0, TGNumberFormat::kNESInteger, TGNumberFormat::kNEANonNegative);
   chEntry->SetWidth(50);
   chEntry->SetLimits(TGNumberFormat::kNELLimitMinMax, 0, pixie->GetDigitizerNumChannel(0));
-  hframe1->AddFrame(chEntry, new TGLayoutHints(kLHintsCenterX , 2, 2, 5, 0));
+  hframe1->AddFrame(chEntry, new TGLayoutHints(kLHintsCenterX  | kLHintsCenterY, 2, 2, 5, 0));
   
   TGTextButton *bGetADCTrace = new TGTextButton(hframe1,"Get &ADC Trace");
   bGetADCTrace->Connect("Clicked()","MainWindow",this,"GetADCTrace()");
-  hframe1->AddFrame(bGetADCTrace, new TGLayoutHints(kLHintsCenterX, 2,2,5,0));
+  hframe1->AddFrame(bGetADCTrace, new TGLayoutHints(kLHintsCenterX | kLHintsCenterY, 2,2,5,0));
 
   TGTextButton *bGetBaseLine = new TGTextButton(hframe1,"Get &BaseLine");
   bGetBaseLine->Connect("Clicked()","MainWindow",this,"GetBaseLine()");
-  hframe1->AddFrame(bGetBaseLine, new TGLayoutHints(kLHintsCenterX, 2,2,5,0));
+  hframe1->AddFrame(bGetBaseLine, new TGLayoutHints(kLHintsCenterX | kLHintsCenterY, 2,2,5,0));
 
   TGTextButton *bScope = new TGTextButton(hframe1,"&Scope");
   bScope->Connect("Clicked()","MainWindow",this,"Scope()");
-  hframe1->AddFrame(bScope, new TGLayoutHints(kLHintsCenterX, 2,2,5,0));
+  hframe1->AddFrame(bScope, new TGLayoutHints(kLHintsCenterX | kLHintsCenterY, 2,2,5,0));
 
   ///================= Start Run group
   TGGroupFrame * group2 = new TGGroupFrame(hframe, "Start run", kHorizontalFrame);
-  hframe->AddFrame(group2, new  TGLayoutHints(kLHintsCenterX, 2,2,5,0) );
+  hframe->AddFrame(group2, new  TGLayoutHints(kLHintsCenterX | kLHintsCenterY, 2,2,5,0) );
   
   TGHorizontalFrame *hframe2 = new TGHorizontalFrame(group2,200,30);
   group2->AddFrame(hframe2);
   
   tePath = new TGTextEntry(hframe2, new TGTextBuffer(10));
   tePath->SetText("haha.evt");
-  hframe2->AddFrame(tePath, new TGLayoutHints(kLHintsCenterX, 2,2,5,0));
+  hframe2->AddFrame(tePath, new TGLayoutHints(kLHintsCenterX | kLHintsCenterY, 2,2,5,0));
   
   TGTextButton *bStartRun = new TGTextButton(hframe2,"Start &Run");
   bStartRun->Connect("Clicked()","MainWindow",this,"StartRun()");
-  hframe2->AddFrame(bStartRun, new TGLayoutHints(kLHintsCenterX, 2,2,5,0));
+  hframe2->AddFrame(bStartRun, new TGLayoutHints(kLHintsCenterX | kLHintsCenterY, 2,2,5,0));
   
   TGTextButton *bStopRun = new TGTextButton(hframe2,"Stop Run");
   bStopRun->Connect("Clicked()","MainWindow",this,"StopRun()");
-  hframe2->AddFrame(bStopRun, new TGLayoutHints(kLHintsCenterX, 2,2,5,0));
+  hframe2->AddFrame(bStopRun, new TGLayoutHints(kLHintsCenterX | kLHintsCenterY, 2,2,5,0));
 
   TGTextButton *bScalar = new TGTextButton(hframe2,"Scalar");
-  //bScalar->Connect("Clicked()","MainWindow",this,"getADCTrace()");
-  hframe2->AddFrame(bScalar, new TGLayoutHints(kLHintsCenterX, 2,2,5,0));
+  bScalar->Connect("Clicked()","MainWindow",this,"OpenScalar()");
+  hframe2->AddFrame(bScalar, new TGLayoutHints(kLHintsCenterX | kLHintsCenterY, 2,2,5,0));
 
 
   ///================= Read evt group
@@ -167,6 +167,8 @@ MainWindow::MainWindow(const TGWindow *p,UInt_t w,UInt_t h) {
   /// setup thread
   thread = new TThread("hahaha", SaveData, (void *) 1);
   
+  mainSettings = NULL;
+  scalarPanel = NULL;
   
   ///HandleMenu(M_MAIN_CH_SETTINGS);
 
@@ -192,7 +194,13 @@ void MainWindow::HandleMenu(Int_t id){
     case M_EXIT: GoodBye(); break;
     
     case M_MAIN_CH_SETTINGS: {
-      mainSettings = new SettingsSummary(gClient->GetRoot(), 600, 600, pixie);
+      if( mainSettings == NULL ) {
+        mainSettings = new SettingsSummary(gClient->GetRoot(), 600, 600, pixie);
+      }else{
+        if( !mainSettings->isOpened ) {
+          mainSettings = new SettingsSummary(gClient->GetRoot(), 600, 600, pixie);
+        }
+      }
     }break;
     
   }
@@ -333,6 +341,8 @@ void MainWindow::StartRun(){
   
   pixie->OpenFile(tePath->GetText(), false);
   
+  LogMsg(Form("Start Run. Save data at %s.\n", tePath->GetText()));
+  
   pixie->StartRun(1);
 
   //Emit("StartRun()"); 
@@ -353,7 +363,7 @@ void * MainWindow::SaveData(void* ptr){
   
   while( pixie->IsRunning() ){
     
-    usleep(500*1000);
+    usleep(500*1000); /// 500 msec
     
     pixie->ReadData(0);
     pixie->SaveData();
@@ -375,7 +385,19 @@ void MainWindow::StopRun(){
   
   pixie->CloseFile();
   
+  LogMsg("Stop Run");
+  
   pixie->PrintStatistics(0);
+}
+
+
+void MainWindow::OpenScalar(){
+  
+  if( scalarPanel == NULL ) {
+    scalarPanel = new ScalarPanel(gClient->GetRoot(), 600, 600, pixie);
+  }else{
+    if( !scalarPanel->isOpened ) scalarPanel = new ScalarPanel(gClient->GetRoot(), 600, 600, pixie);
+  }
 }
 
 void MainWindow::LogMsg(TString msg){
