@@ -180,6 +180,7 @@ MainWindow::MainWindow(const TGWindow *p,UInt_t w,UInt_t h) {
   
   settingsSummary = NULL;
   moduleSetting = NULL;
+  channelSetting = NULL;
   scalarPanel = NULL;
   
   bStopRun->SetEnabled(false);
@@ -218,6 +219,17 @@ void MainWindow::HandleMenu(Int_t id){
           settingsSummary = new SettingsSummary(gClient->GetRoot(), 600, 600, pixie);
         }
       }
+    }break;
+    
+    case M_CH_SETTING:{
+      if( channelSetting == NULL ) {
+        channelSetting = new ChannelSetting(gClient->GetRoot(), 600, 600, pixie);
+      }else{
+        if( !channelSetting->isOpened ) {
+          channelSetting = new ChannelSetting(gClient->GetRoot(), 600, 600, pixie);
+        }
+      }
+      
     }break;
     
     ///========================= Module setting

@@ -12,6 +12,7 @@
 #include "settingsSummary.h"
 #include "scalarPanel.h"
 #include "moduleSetting.h"
+#include "channelSetting.h"
 
 class TGWindow;
 class TGMainFrame;
@@ -38,6 +39,7 @@ private:
    
    SettingsSummary * settingsSummary;
    ModuleSetting * moduleSetting;
+   ChannelSetting * channelSetting;
    ScalarPanel * scalarPanel;
    
    TThread * thread;

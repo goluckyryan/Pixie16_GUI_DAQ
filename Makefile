@@ -29,7 +29,7 @@ APIBASE = /usr/opt/xia/PixieSDK/lib/
 LIBS = $(APIBASE)libPixie16Api.so $(APIBASE)libPixieSDK.a $(PLXBASE)PlxApi.a
 
 
-OBJS = pixieDAQ.o Pixie16Class.o settingsSummary.o scalarPanel.o moduleSetting.o
+OBJS = pixieDAQ.o Pixie16Class.o settingsSummary.o scalarPanel.o moduleSetting.o channelSetting.o
 
 
 all: testing/test testing/example  pixieDAQ
@@ -63,6 +63,12 @@ scalarPanel.o : scalarPanel.cpp scalarPanel.h
 moduleSetting.o : moduleSetting.cpp moduleSetting.h
 	@echo "--------- creating moduleSetting.o"
 	$(CC) $(CFLAGS) $(PIXIE_LIB_PATH) moduleSetting.cpp $(ROOT_FLAG)
+
+channelSetting.o : channelSetting.cpp channelSetting.h
+	@echo "--------- creating channelSetting.o"
+	$(CC) $(CFLAGS) $(PIXIE_LIB_PATH) channelSetting.cpp $(ROOT_FLAG)
+
+
 
 #--------------------------
 testing/example : testing/example.o 
