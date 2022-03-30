@@ -11,6 +11,7 @@
 #include "Pixie16Class.h"
 #include "settingsSummary.h"
 #include "scalarPanel.h"
+#include "moduleSetting.h"
 
 class TGWindow;
 class TGMainFrame;
@@ -30,10 +31,13 @@ private:
    TGTextEntry * tePath;
    TGTextEdit * teLog;
    
+   TGTextButton *bStartRun;
+   TGTextButton *bStopRun;
+   
    static Pixie16 * pixie;
    
-   SettingsSummary * mainSettings;
-   
+   SettingsSummary * settingsSummary;
+   ModuleSetting * moduleSetting;
    ScalarPanel * scalarPanel;
    
    TThread * thread;
@@ -49,7 +53,7 @@ public:
    void GetBaseLine();
    void Scope();
 
-   void StartRun(); // *SIGNAL*
+   void StartRun();
    static void * SaveData(void* ptr ); /// thread
    void StopRun();
 

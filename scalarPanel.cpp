@@ -11,12 +11,11 @@
 
 #include "scalarPanel.h"
 
-
+///declaration of static variables
 Pixie16 * ScalarPanel::pixie = NULL;
 bool ScalarPanel::updateFlag = true;
 int ScalarPanel::nMod = 0;
 TGTextEntry  * ScalarPanel::teRate[][MAXCH] = {NULL};
-
 
 ScalarPanel::ScalarPanel(const TGWindow *p, UInt_t w, UInt_t h, Pixie16 * pixie){
   
@@ -55,6 +54,7 @@ ScalarPanel::ScalarPanel(const TGWindow *p, UInt_t w, UInt_t h, Pixie16 * pixie)
   
     for( int ch = 0 ; ch < MAXCH ; ch ++){
       teRate[mod][ch] = new TGTextEntry(hScalarMod[mod], new TGTextBuffer(10));
+      teRate[mod][ch]->SetEnabled(false);
       teRate[mod][ch]->SetAlignment(kTextRight);
       hScalarMod[mod]->AddFrame(teRate[mod][ch], new TGLayoutHints(kLHintsCenterX | kLHintsCenterY, 2,2,2,2));
     }

@@ -25,10 +25,9 @@ enum MenuIdentifiers{
   
   M_FILE_OPEN,
   M_EXIT,
-  M_MAIN_CH_SETTINGS,
+  M_CH_SETTINGS_SUMMARY,
   M_CH_SETTING,
-  M_DIGITIZER_SETTINGS,
-  M_DIGITIZER_INFOS
+  M_MODULE_SETTINGS
   
 };
 
@@ -64,15 +63,16 @@ MainWindow::MainWindow(const TGWindow *p,UInt_t w,UInt_t h) {
   fMenuBar->AddPopup("&File",     fMenuFile,     new TGLayoutHints(kLHintsTop | kLHintsLeft, 0, 4, 0, 0));
   
   fMenuSettings = new TGPopupMenu(gClient->GetRoot());
-  fMenuSettings->AddEntry("&Main Ch Settings", M_MAIN_CH_SETTINGS);
+  fMenuSettings->AddEntry("&Settings Summary", M_CH_SETTINGS_SUMMARY);
   fMenuSettings->AddEntry("&Channel Setting", M_CH_SETTING);
   fMenuSettings->AddSeparator();
-  fMenuSettings->AddEntry("Digitizer &Settings", M_DIGITIZER_SETTINGS);
-  fMenuSettings->AddEntry("Digitizer &Info", M_DIGITIZER_INFOS);
+  fMenuSettings->AddEntry("Digitizer &Settings", M_MODULE_SETTINGS);
   
   fMenuSettings->Connect("Activated(Int_t)", "MainWindow", this, "HandleMenu(Int_t)");
   fMenuBar->AddPopup("&Settings", fMenuSettings, new TGLayoutHints(kLHintsTop | kLHintsLeft, 0, 4, 0, 0));
 
+
+  TGLayoutHints * uniLayoutHints = new TGLayoutHints(kLHintsNormal, 2,2,10,0); ///left, right, top, bottom
 
   /// Create a horizontal frame widget with buttons
   TGHorizontalFrame *hframe = new TGHorizontalFrame(fMain,200,40);
@@ -80,85 +80,87 @@ MainWindow::MainWindow(const TGWindow *p,UInt_t w,UInt_t h) {
   
   ///================= signal Channel group
   TGGroupFrame * group1 = new TGGroupFrame(hframe, "Single Channel", kHorizontalFrame);
-  hframe->AddFrame(group1, new  TGLayoutHints(kLHintsCenterX, 5,5,3,3) );
+  hframe->AddFrame(group1 );
   
   TGHorizontalFrame *hframe1 = new TGHorizontalFrame(group1,200,30);
-  group1->AddFrame(hframe1);
+  group1->AddFrame(hframe1 );
   
   TGLabel * lb1 = new TGLabel(hframe1, "Module ID :");
-  hframe1->AddFrame(lb1, new TGLayoutHints(kLHintsCenterX | kLHintsCenterY, 2, 2, 5, 0));
+  hframe1->AddFrame(lb1, uniLayoutHints);
   
   modIDEntry = new TGNumberEntry(hframe1, 0, 0, 0, TGNumberFormat::kNESInteger, TGNumberFormat::kNEANonNegative);
   modIDEntry->SetWidth(50);
   modIDEntry->SetLimits(TGNumberFormat::kNELLimitMinMax, 0, pixie->GetNumModule()-1);
-  hframe1->AddFrame(modIDEntry, new TGLayoutHints(kLHintsCenterX , 2, 2, 5, 0));
+  hframe1->AddFrame(modIDEntry, uniLayoutHints);
   
   TGLabel * lb2 = new TGLabel(hframe1, "Ch :");
-  hframe1->AddFrame(lb2, new TGLayoutHints(kLHintsCenterX | kLHintsCenterY, 2, 2, 5, 0));
+  hframe1->AddFrame(lb2, uniLayoutHints);
   
   chEntry = new TGNumberEntry(hframe1, 0, 0, 0, TGNumberFormat::kNESInteger, TGNumberFormat::kNEANonNegative);
   chEntry->SetWidth(50);
   chEntry->SetLimits(TGNumberFormat::kNELLimitMinMax, 0, pixie->GetDigitizerNumChannel(0));
-  hframe1->AddFrame(chEntry, new TGLayoutHints(kLHintsCenterX  | kLHintsCenterY, 2, 2, 5, 0));
+  hframe1->AddFrame(chEntry, uniLayoutHints);
   
   TGTextButton *bGetADCTrace = new TGTextButton(hframe1,"Get &ADC Trace");
   bGetADCTrace->Connect("Clicked()","MainWindow",this,"GetADCTrace()");
-  hframe1->AddFrame(bGetADCTrace, new TGLayoutHints(kLHintsCenterX | kLHintsCenterY, 2,2,5,0));
+  hframe1->AddFrame(bGetADCTrace, uniLayoutHints);
 
   TGTextButton *bGetBaseLine = new TGTextButton(hframe1,"Get &BaseLine");
   bGetBaseLine->Connect("Clicked()","MainWindow",this,"GetBaseLine()");
-  hframe1->AddFrame(bGetBaseLine, new TGLayoutHints(kLHintsCenterX | kLHintsCenterY, 2,2,5,0));
+  hframe1->AddFrame(bGetBaseLine, uniLayoutHints);
 
   TGTextButton *bScope = new TGTextButton(hframe1,"&Scope");
   bScope->Connect("Clicked()","MainWindow",this,"Scope()");
-  hframe1->AddFrame(bScope, new TGLayoutHints(kLHintsCenterX | kLHintsCenterY, 2,2,5,0));
+  hframe1->AddFrame(bScope, uniLayoutHints);
 
   ///================= Start Run group
   TGGroupFrame * group2 = new TGGroupFrame(hframe, "Start run", kHorizontalFrame);
-  hframe->AddFrame(group2, new  TGLayoutHints(kLHintsCenterX | kLHintsCenterY, 2,2,5,0) );
+  //hframe->AddFrame(group2, new  TGLayoutHints(kLHintsCenterX, 5,5,3,3) );
+  hframe->AddFrame(group2);
   
   TGHorizontalFrame *hframe2 = new TGHorizontalFrame(group2,200,30);
   group2->AddFrame(hframe2);
   
   tePath = new TGTextEntry(hframe2, new TGTextBuffer(10));
   tePath->SetText("haha.evt");
-  hframe2->AddFrame(tePath, new TGLayoutHints(kLHintsCenterX | kLHintsCenterY, 2,2,5,0));
+  hframe2->AddFrame(tePath, uniLayoutHints);
   
-  TGTextButton *bStartRun = new TGTextButton(hframe2,"Start &Run");
+  bStartRun = new TGTextButton(hframe2,"Start &Run");
   bStartRun->Connect("Clicked()","MainWindow",this,"StartRun()");
-  hframe2->AddFrame(bStartRun, new TGLayoutHints(kLHintsCenterX | kLHintsCenterY, 2,2,5,0));
+  hframe2->AddFrame(bStartRun, uniLayoutHints);
   
-  TGTextButton *bStopRun = new TGTextButton(hframe2,"Stop Run");
+  bStopRun = new TGTextButton(hframe2,"Stop Run");
   bStopRun->Connect("Clicked()","MainWindow",this,"StopRun()");
-  hframe2->AddFrame(bStopRun, new TGLayoutHints(kLHintsCenterX | kLHintsCenterY, 2,2,5,0));
+  hframe2->AddFrame(bStopRun, uniLayoutHints);
 
   TGTextButton *bScalar = new TGTextButton(hframe2,"Scalar");
   bScalar->Connect("Clicked()","MainWindow",this,"OpenScalar()");
-  hframe2->AddFrame(bScalar, new TGLayoutHints(kLHintsCenterX | kLHintsCenterY, 2,2,5,0));
+  hframe2->AddFrame(bScalar, uniLayoutHints);
 
 
   ///================= Read evt group
-  TGGroupFrame * group3 = new TGGroupFrame(hframe, "Read Evt", kHorizontalFrame);
-  hframe->AddFrame(group3, new  TGLayoutHints(kLHintsCenterX, 2,2,5,0) );
-  
-  TGHorizontalFrame *hframe3 = new TGHorizontalFrame(group3,200,30);
-  group3->AddFrame(hframe3);
-  
-  TGTextButton *bOpenEVT = new TGTextButton(hframe3,"OpenEvt");
-  //bOpenEVT->Connect("Clicked()","MainWindow",this,"StartRun()");
-  hframe3->AddFrame(bOpenEVT, new TGLayoutHints(kLHintsCenterX, 2,2,5,0));
+  //TGGroupFrame * group3 = new TGGroupFrame(hframe, "Read Evt", kHorizontalFrame);
+  ////hframe->AddFrame(group3, new  TGLayoutHints(kLHintsCenterX, 5,5,3,3) );
+  //hframe->AddFrame(group3);
+  //
+  //TGHorizontalFrame *hframe3 = new TGHorizontalFrame(group3,200,30);
+  //group3->AddFrame(hframe3);
+  //
+  //TGTextButton *bOpenEVT = new TGTextButton(hframe3,"OpenEvt");
+  ////bOpenEVT->Connect("Clicked()","MainWindow",this,"StartRun()");
+  //hframe3->AddFrame(bOpenEVT, uniLayoutHints);
     
 
   ///================= Create canvas widget
-  fEcanvas = new TRootEmbeddedCanvas("Ecanvas",fMain,800,400);
-  fMain->AddFrame(fEcanvas, new TGLayoutHints(kLHintsExpandX | kLHintsExpandY, 10,10,10,1));
+  fEcanvas = new TRootEmbeddedCanvas("Ecanvas",fMain,900,400);
+  fMain->AddFrame(fEcanvas, new TGLayoutHints(kLHintsExpandX | kLHintsExpandY, 10,10,10,10));
 
   ///================= Log massage
   TGGroupFrame * groupLog = new TGGroupFrame(fMain, "Log Message", kHorizontalFrame);
-  fMain->AddFrame(groupLog, new  TGLayoutHints(kLHintsCenterX, 5,5,3,3) );
+  fMain->AddFrame(groupLog, new  TGLayoutHints(kLHintsCenterX, 5,5,0,5) );
   
   teLog = new TGTextEdit(groupLog, w, 60);
-  groupLog->AddFrame(teLog, new TGLayoutHints(kLHintsExpandX | kLHintsExpandY, 0,0,5,0));
+  groupLog->AddFrame(teLog,  new TGLayoutHints(kLHintsNormal, 0,0,10,0));
 
 
   /// Set a name to the main frame
@@ -176,10 +178,13 @@ MainWindow::MainWindow(const TGWindow *p,UInt_t w,UInt_t h) {
   /// setup thread
   thread = new TThread("hahaha", SaveData, (void *) 1);
   
-  mainSettings = NULL;
+  settingsSummary = NULL;
+  moduleSetting = NULL;
   scalarPanel = NULL;
   
-  ///HandleMenu(M_MAIN_CH_SETTINGS);
+  bStopRun->SetEnabled(false);
+  
+  ///HandleMenu(M_CH_SETTINGS_SUMMARY);
 
   
 }
@@ -196,20 +201,35 @@ MainWindow::~MainWindow() {
 void MainWindow::HandleMenu(Int_t id){
   switch(id){
     
+    ///========================= File Open
     case M_FILE_OPEN:{
       
     }break;
     
+    ///========================= Exit
     case M_EXIT: GoodBye(); break;
     
-    case M_MAIN_CH_SETTINGS: {
-      if( mainSettings == NULL ) {
-        mainSettings = new SettingsSummary(gClient->GetRoot(), 600, 600, pixie);
+    ///========================= Channel setting summary
+    case M_CH_SETTINGS_SUMMARY: {
+      if( settingsSummary == NULL ) {
+        settingsSummary = new SettingsSummary(gClient->GetRoot(), 600, 600, pixie);
       }else{
-        if( !mainSettings->isOpened ) {
-          mainSettings = new SettingsSummary(gClient->GetRoot(), 600, 600, pixie);
+        if( !settingsSummary->isOpened ) {
+          settingsSummary = new SettingsSummary(gClient->GetRoot(), 600, 600, pixie);
         }
       }
+    }break;
+    
+    ///========================= Module setting
+    case M_MODULE_SETTINGS:{
+      if( moduleSetting == NULL ) {
+        moduleSetting = new ModuleSetting(gClient->GetRoot(), 600, 600, pixie);
+      }else{
+        if( !moduleSetting->isOpened ) {
+          moduleSetting = new ModuleSetting(gClient->GetRoot(), 600, 600, pixie);
+        }
+      }
+      
     }break;
     
   }
@@ -279,9 +299,10 @@ void MainWindow::Scope(){
   
   DataBlock * data = pixie->GetData(); 
   
+  LogMsg("Take data for 200 msec.");
   pixie->StartRun(1);
   
-  usleep(100*1000);
+  usleep(200*1000);
   pixie->ReadData(0);
   pixie->StopRun();
   
@@ -343,15 +364,10 @@ void MainWindow::StartRun(){
   
   pixie->StartRun(1);
 
-  //Emit("StartRun()"); 
-
-  ///start a loop that show scalar, plot
-  //TBenchmark clock;
-  //clock.Reset();
-  //clock.Start("timer");
+  if( pixie->IsRunning() ) thread->Run(); /// call SaveData()
   
-  if( pixie->IsRunning() ) thread->Run();
-  
+  bStartRun->SetEnabled(false);
+  bStopRun->SetEnabled(true);
 }
 
 
@@ -365,6 +381,8 @@ void * MainWindow::SaveData(void* ptr){
     
     pixie->ReadData(0);
     pixie->SaveData();
+    
+    //TODO Get file size, Fill HISTORGRAM;
     
   }
   
@@ -386,6 +404,8 @@ void MainWindow::StopRun(){
   LogMsg("Stop Run");
   
   pixie->PrintStatistics(0);
+  bStartRun->SetEnabled(true);
+  bStopRun->SetEnabled(false);
 }
 
 

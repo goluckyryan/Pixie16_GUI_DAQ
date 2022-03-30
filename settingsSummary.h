@@ -2,7 +2,6 @@
 #define SETTINGS_SUMMARY_H
 
 #include <TQObject.h>
-///#include <RQ_OBJECT.h>
 
 #include <TGNumberEntry.h>
 #include <TGComboBox.h>
@@ -16,7 +15,6 @@ class TGMainFrame;
 #define MAXCH 16
 
 class SettingsSummary{
-///   RQ_OBJECT("SettingsSummary")
 private:
   TGMainFrame * fMain;
   
