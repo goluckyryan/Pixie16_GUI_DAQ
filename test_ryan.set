@@ -417,7 +417,7 @@
                     2
                 ],
                 "OffsetDAC": [
-                    32768,
+                    32986,
                     32768,
                     32768,
                     32768,
@@ -1016,7 +1016,7 @@
                 "ChanNum": 0,
                 "CoincPattern": 0,
                 "CoincWait": 0,
-                "ControlTask": 23,
+                "ControlTask": 0,
                 "CrateID": 0,
                 "FIFOLength": 8188,
                 "FastFilterRange": 0,

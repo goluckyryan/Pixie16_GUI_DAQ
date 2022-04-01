@@ -20,7 +20,9 @@ private:
   
   TGNumberEntry * modIDEntry, * chIDEntry;
   
-  TGTextEntry * entry[NUM_CHANNEL_SETTING];
+  TGComboBox * cbOnOff;
+  
+  TGNumberEntry * entry[NUM_CHANNEL_SETTING];
   
   Pixie16 * pixie;
 
@@ -32,6 +34,9 @@ public:
 
   void ChangeMod();
   void ChangeCh();
+
+  void ChangeOnOff();
+  void ChangeID(int id);
 
   bool isOpened;
   

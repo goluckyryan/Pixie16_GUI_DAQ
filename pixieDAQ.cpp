@@ -490,7 +490,6 @@ void * MainWindow::SaveData(void* ptr){
     teLog->AddLine(Form("[%4d-%02d-%02d %02d:%02d:%02d] File Size : %.2f MB [%.2f MB/s], %.2f MB readed", 
                 year, month, day, hour, minute, secound, newFileSize, rate, MByteRead));
     teLog->LineDown();
-
     
   }
   
