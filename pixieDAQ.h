@@ -7,6 +7,7 @@
 #include <TGMenu.h>
 #include <TGTextEdit.h>
 #include <TThread.h>
+#include <TH1F.h>
 
 #include "Pixie16Class.h"
 #include "settingsSummary.h"
@@ -23,14 +24,14 @@ class MainWindow{
    RQ_OBJECT("MainWindow")
 private:
    TGMainFrame         *fMain;
-   TRootEmbeddedCanvas *fEcanvas;
+   static TRootEmbeddedCanvas *fEcanvas;
    
    TGMenuBar          *fMenuBar;
    TGPopupMenu        *fMenuFile, *fMenuSettings;
    
    TGNumberEntry * modIDEntry, *chEntry; 
    TGTextEntry * tePath;
-   TGTextEdit * teLog;
+   static TGTextEdit * teLog;
    
    TGTextButton *bStartRun;
    TGTextButton *bStopRun;
@@ -44,6 +45,10 @@ private:
    
    TThread * thread;
 
+   TThread * fillHistThread;
+
+   static TH1F * h1[13][16];
+   
 
 public:
    MainWindow(const TGWindow *p, UInt_t w, UInt_t h);
@@ -61,6 +66,7 @@ public:
 
    void OpenScalar();
 
+   static void * FillHistogram(void * ptr); /// thread
 
    void LogMsg(TString msg);
 

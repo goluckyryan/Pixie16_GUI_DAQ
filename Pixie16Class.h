@@ -85,7 +85,7 @@ private:
   DataBlock * data;
   unsigned int nextWord;
   
-  std::ofstream outFile;
+  std::fstream outFile;
   
 public:
 
@@ -218,6 +218,7 @@ public:
   
   void OpenFile(std::string fileName, bool append);
   void SaveData();
+  long int GetFileSize();
   void CloseFile();
   
   

@@ -807,6 +807,16 @@ void Pixie16::SaveData(){
   if( outFile.is_open() ) outFile.write(reinterpret_cast<char*>(ExtFIFO_Data), nFIFOWords * sizeof(uint32_t));
 }
 
+long int Pixie16::GetFileSize(){
+  
+  if( outFile.is_open() ){
+    return outFile.tellg();
+  }else{
+    return 0; 
+  }
+  
+}
+
 void Pixie16::CloseFile(){
   outFile.close();
 }

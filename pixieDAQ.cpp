@@ -13,8 +13,8 @@
 #include <TAxis.h>
 #include <TBenchmark.h>
 
-#include <thread>
 #include <unistd.h>
+#include <ctime>
 
 #include "Pixie16Class.h"
 
@@ -33,12 +33,15 @@ enum MenuIdentifiers{
 
 ///make static members 
 Pixie16 * MainWindow::pixie = NULL;
+TGTextEdit * MainWindow::teLog = NULL;
+TRootEmbeddedCanvas * MainWindow::fEcanvas = NULL;
+TH1F * MainWindow::h1[13][16]={NULL};
 
 MainWindow::MainWindow(const TGWindow *p,UInt_t w,UInt_t h) {
   
   printf("Removing Pixie16Msg.log \n");
   remove( "Pixie16Msg.log");
-
+  
   pixie = new Pixie16();
   if ( pixie->GetStatus() < 0 ) {
     printf("Exiting program... \n");
@@ -159,7 +162,7 @@ MainWindow::MainWindow(const TGWindow *p,UInt_t w,UInt_t h) {
   TGGroupFrame * groupLog = new TGGroupFrame(fMain, "Log Message", kHorizontalFrame);
   fMain->AddFrame(groupLog, new  TGLayoutHints(kLHintsCenterX, 5,5,0,5) );
   
-  teLog = new TGTextEdit(groupLog, w, 60);
+  teLog = new TGTextEdit(groupLog, w, 100);
   groupLog->AddFrame(teLog,  new TGLayoutHints(kLHintsNormal, 0,0,10,0));
 
 
@@ -177,6 +180,7 @@ MainWindow::MainWindow(const TGWindow *p,UInt_t w,UInt_t h) {
   
   /// setup thread
   thread = new TThread("hahaha", SaveData, (void *) 1);
+  fillHistThread = new TThread("kakaka", FillHistogram, (void *) 1);
   
   settingsSummary = NULL;
   moduleSetting = NULL;
@@ -184,6 +188,8 @@ MainWindow::MainWindow(const TGWindow *p,UInt_t w,UInt_t h) {
   scalarPanel = NULL;
   
   bStopRun->SetEnabled(false);
+  
+  LogMsg("Boot OK and ready to run.");
   
   ///HandleMenu(M_CH_SETTINGS_SUMMARY);
 
@@ -250,12 +256,13 @@ void MainWindow::HandleMenu(Int_t id){
 
 
 void MainWindow::GetADCTrace() {
-  printf("--------- get ADCTrace \n");
   
   int modID = modIDEntry->GetNumber();
   int ch = chEntry->GetNumber();
-  pixie->CaptureADCTrace(modID, ch);
-  
+
+  LogMsg(Form("Get ADCTrace for mod:%d, ch-%02d", modID, ch));
+
+  pixie->CaptureADCTrace(modID, ch);  
   unsigned short * haha =  pixie->GetADCTrace();
   double dt = pixie->GetChannelSetting("XDT", modID, ch); 
   
@@ -277,6 +284,9 @@ void MainWindow::GetBaseLine(){
 
   int modID = modIDEntry->GetNumber();
   int ch = chEntry->GetNumber();
+  
+  LogMsg(Form("Get Baseline for mod:%d, ch-%02d", modID, ch));
+  
   pixie->CaptureBaseLine(modID, ch);
   
   double * baseline = pixie->GetBasline();
@@ -302,16 +312,17 @@ void MainWindow::Scope(){
   int ch = chEntry->GetNumber();
   
   if( pixie->GetChannelOnOff(modID, ch) == false ){
-    LogMsg(Form("ch-%d is disabled\n", ch));
+    LogMsg(Form("mod:%d, ch-%d is disabled\n", modID, ch));
     return;
-  }
+  } 
   
+  LogMsg(Form("Get trace for mod:%d, ch-%02d", modID, ch));
   
   double dt = pixie->GetCh2ns(modID);
   
   DataBlock * data = pixie->GetData(); 
   
-  LogMsg("Take data for 200 msec.");
+  LogMsg("[Scope] Take data for 200 msec.");
   pixie->StartRun(1);
   
   usleep(200*1000);
@@ -320,8 +331,8 @@ void MainWindow::Scope(){
   
   TGraph * gTrace = new TGraph();
   
-  printf("              next word : %u\n", pixie->GetNextWord());
-  printf("number of word received : %u\n", pixie->GetnFIFOWords());
+  ///printf("              next word : %u\n", pixie->GetNextWord());
+  ///printf("number of word received : %u\n", pixie->GetnFIFOWords());
 
   //TODO add statistics, like trigger rate
   
@@ -331,7 +342,7 @@ void MainWindow::Scope(){
     if( data->slot < 2 ) break;
     if(  data->eventID >= pixie->GetnFIFOWords() ) break;
     
-    printf("mod:%d, ch:%d, event:%llu, %u, %u\n", data->slot-2, data->ch, data->eventID, pixie->GetNextWord(), pixie->GetnFIFOWords() );
+    ///printf("mod:%d, ch:%d, event:%llu, %u, %u\n", data->slot-2, data->ch, data->eventID, pixie->GetNextWord(), pixie->GetnFIFOWords() );
       
     if( data->ch == ch && data->slot == modID + 2 ){
 
@@ -339,7 +350,7 @@ void MainWindow::Scope(){
         gTrace->SetPoint(i, i*dt, (data->trace)[i]);
       }
       gTrace->GetXaxis()->SetTitle("time [us]");
-      gTrace->SetTitle(Form("mod:%d, ch:%d, event:%llu\n", modID, ch, data->eventID));
+      gTrace->SetTitle(Form("mod-%d, ch-%02d\n", modID, ch));
       gTrace->Draw("APL");
       
       TCanvas *fCanvas = fEcanvas->GetCanvas();
@@ -351,8 +362,7 @@ void MainWindow::Scope(){
     }
   }
   
-  
-  printf("=============== finished \n");
+  ///printf("=============== finished \n");
   
 }
 
@@ -375,7 +385,6 @@ void MainWindow::StartRun(){
   LogMsg(Form("Start Run. Save data at %s.\n", tePath->GetText()));
   
   pixie->StartRun(1);
-
   if( pixie->IsRunning() ) thread->Run(); /// call SaveData()
   
   bStartRun->SetEnabled(false);
@@ -383,41 +392,22 @@ void MainWindow::StartRun(){
 }
 
 
-void * MainWindow::SaveData(void* ptr){
-  
-  printf("Save Data()\n");
-  
-  while( pixie->IsRunning() ){
-    
-    usleep(500*1000); /// 500 msec
-    
-    pixie->ReadData(0);
-    pixie->SaveData();
-    
-    //TODO Get file size, Fill HISTORGRAM;
-    
-  }
-  
-  pixie->ReadData(0);
-  pixie->SaveData();
-  
-  printf("finished Save Data.\n");
-  
-  return ptr;
-  
-}
-
 void MainWindow::StopRun(){
   
   pixie->StopRun();
-  
-  pixie->CloseFile();
+  pixie->ReadData(0);
+  pixie->SaveData();
   
   LogMsg("Stop Run");
+
+  LogMsg(Form("File Size : %.2f MB", pixie->GetFileSize()/1024./1024.));
+
+  pixie->CloseFile();
   
   pixie->PrintStatistics(0);
   bStartRun->SetEnabled(true);
   bStopRun->SetEnabled(false);
+
 }
 
 
@@ -430,13 +420,90 @@ void MainWindow::OpenScalar(){
   }
 }
 
+
 void MainWindow::LogMsg(TString msg){
-  teLog->AddLine(msg);
+  
+  time_t now = time(0);
+  tm * ltm = localtime(&now);
+  int year = 1900 + ltm->tm_year;
+  int month = 1 + ltm->tm_mon;
+  int day = ltm->tm_mday;
+  int hour = ltm->tm_hour;
+  int minute = ltm->tm_min;
+  int secound = ltm->tm_sec;
+  
+  teLog->AddLine(Form("[%4d-%02d-%02d %02d:%02d:%02d] ", year, month, day, hour, minute, secound) + msg);
   teLog->LineDown();
-  teLog->End();
+  teLog->ShowBottom();
+}
+
+//############################################ Threads
+
+void * MainWindow::SaveData(void* ptr){
+  
+  printf("Save Data()\n");
+  
+  double oldFileSize = 0, newFileSize = 0;
+  double oldTime = 0, newTime = 0;
+  TBenchmark localClock;
+  localClock.Reset();
+  localClock.Start("timer");
+
+  while( pixie->IsRunning() ){
+    
+    usleep(500*1000); /// 500 msec
+    
+    if( !pixie->IsRunning() ) break;
+    
+    pixie->ReadData(0);
+    pixie->SaveData();
+    
+    //TODO Fill HISTORGRAM;
+    time_t now = time(0);
+    tm * ltm = localtime(&now);
+    int year = 1900 + ltm->tm_year;
+    int month = 1 + ltm->tm_mon;
+    int day = ltm->tm_mday;
+    int hour = ltm->tm_hour;
+    int minute = ltm->tm_min;
+    int secound = ltm->tm_sec;
+    
+    newFileSize = pixie->GetFileSize()/1024./1024.;
+    
+    localClock.Stop("timer");
+    newTime = localClock.GetRealTime("timer"); /// sec
+    localClock.Start("timer");
+    
+    double rate = (newFileSize - oldFileSize)/ (newTime-oldTime); 
+    oldFileSize = newFileSize;
+    oldTime = newTime;
+
+    teLog->AddLine(Form("[%4d-%02d-%02d %02d:%02d:%02d] File Size : %.2f MB [%.2f MB/s]", year, month, day, hour, minute, secound, newFileSize, rate));
+    teLog->LineDown();
+
+    
+  }
+  
+  pixie->ReadData(0);
+  pixie->SaveData();
+  
+  printf("finished Save Data.\n");
+  
+  return ptr;
+  
+}
+
+void * MainWindow::FillHistogram(void *ptr){
+  
+  //using evtReader  or   process from ExtFIFOword, but in case in complete data
+  
+  
+  
+  return ptr;
 }
 
 
+//############################################
 int main(int argc, char **argv) {
   printf(" Welcome to pixie16 DQ \n");
   
