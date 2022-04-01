@@ -194,14 +194,14 @@ public:
   double GetRealTime(unsigned short modID);
   void   PrintStatistics(unsigned short modID);
 
-  
+  void CheckExternalFIFOWords(unsigned short modID);
   void ReadData(unsigned short modID);
   
   unsigned int GetTotalNumWords() {return totNumFIFOWords;}
   unsigned int GetnFIFOWords() {return nFIFOWords;}
   unsigned int GetNextWord()   {return nextWord;}
   DataBlock *  GetData()       {return data;}
-  bool ProcessSingleData();
+  int ProcessSingleData();
   
   void PrintExtFIFOWords() {
     unsigned int nWords = (ExtFIFO_Data[nextWord] >> 17) & 0x3FFF;

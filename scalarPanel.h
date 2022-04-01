@@ -24,6 +24,9 @@ private:
 
   static bool updateFlag;
   
+  static TGTextEntry * teRate[MAXMOD][MAXCH];  
+  static TGTextEntry * teRealTime[MAXMOD];  
+  
   TThread * thread;
 
 public:
@@ -36,7 +39,7 @@ public:
   
   bool isOpened;
     
-  static TGTextEntry * teRate[MAXMOD][MAXCH];  
+
   
   
 };

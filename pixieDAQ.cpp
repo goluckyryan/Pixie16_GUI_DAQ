@@ -11,7 +11,7 @@
 #include <TGraph.h>
 #include <TGTextEditor.h>
 #include <TAxis.h>
-#include <TBenchmark.h>
+
 
 #include <unistd.h>
 #include <ctime>
@@ -275,6 +275,7 @@ void MainWindow::GetADCTrace() {
     gTrace->SetPoint(i, i*dt, haha[i]);
   }
   gTrace->GetXaxis()->SetTitle("time [us]");
+  gTrace->GetXaxis()->SetRangeUser(0, pixie->GetADCTraceLength()*dt);
   gTrace->Draw("APL");
   
   TCanvas *fCanvas = fEcanvas->GetCanvas();
@@ -325,10 +326,12 @@ void MainWindow::Scope(){
   
   DataBlock * data = pixie->GetData(); 
   
-  LogMsg("[Scope] Take data for 200 msec.");
+  int runDuration = 200; ///msec
+  
+  LogMsg(Form("[Scope] Take data for %d msec.", runDuration));
   pixie->StartRun(1);
   
-  usleep(200*1000);
+  usleep(runDuration*1000);
   pixie->ReadData(0);
   pixie->StopRun();
   
@@ -337,9 +340,7 @@ void MainWindow::Scope(){
   ///printf("              next word : %u\n", pixie->GetNextWord());
   ///printf("number of word received : %u\n", pixie->GetnFIFOWords());
 
-  //TODO add statistics, like trigger rate
-  
-  while(!pixie->ProcessSingleData()){
+  while( pixie->ProcessSingleData() <= 1 ){ /// full set of dataBlack
     
     if( pixie->GetNextWord() >= pixie->GetnFIFOWords() ) break;
     if( data->slot < 2 ) break;
@@ -353,6 +354,7 @@ void MainWindow::Scope(){
         gTrace->SetPoint(i, i*dt, (data->trace)[i]);
       }
       gTrace->GetXaxis()->SetTitle("time [us]");
+      gTrace->GetXaxis()->SetRangeUser(0, data->trace_length * dt);
       gTrace->SetTitle(Form("mod-%d, ch-%02d\n", modID, ch));
       gTrace->Draw("APL");
       
@@ -402,11 +404,9 @@ void MainWindow::StopRun(){
   pixie->SaveData();
   
   LogMsg("Stop Run");
-
   LogMsg(Form("File Size : %.2f MB", pixie->GetFileSize()/1024./1024.));
-
   pixie->CloseFile();
-  
+
   pixie->PrintStatistics(0);
   bStartRun->SetEnabled(true);
   bStopRun->SetEnabled(false);

@@ -398,6 +398,12 @@ void Pixie16::StopRun(){
   
 }
 
+void Pixie16::CheckExternalFIFOWords(unsigned short modID){
+  if( Pixie16CheckRunStatus(modID) == 1){
+    retval = Pixie16CheckExternalFIFOStatus (&nFIFOWords, modID);
+    if( CheckError("Pixie16CheckExternalFIFOStatus") < 0 ) return;
+  }
+}
 
 void Pixie16::ReadData(unsigned short modID){
 
@@ -418,9 +424,9 @@ void Pixie16::ReadData(unsigned short modID){
   }
 }
 
-bool Pixie16::ProcessSingleData(){
+int Pixie16::ProcessSingleData(){
   
-  bool breakProcessLoopFlag = false;
+  int breakProcessLoopFlag = 0;
   
   if( nextWord < nFIFOWords ){
     data->ch           =  ExtFIFO_Data[nextWord] & 0xF ;
@@ -455,8 +461,8 @@ bool Pixie16::ProcessSingleData(){
     
     nextWord += data->eventLength ;
     
-    if( nextWord == nFIFOWords ) {nextWord = 0; breakProcessLoopFlag = true;}
-    if( nextWord > nFIFOWords ) {nextWord = nextWord - nFIFOWords; breakProcessLoopFlag = true;}
+    if( nextWord == nFIFOWords ) {nextWord = 0; breakProcessLoopFlag = 1;}
+    if( nextWord > nFIFOWords ) {nextWord = nextWord - nFIFOWords; breakProcessLoopFlag = 2;}
 
   }
   

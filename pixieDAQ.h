@@ -8,6 +8,7 @@
 #include <TGTextEdit.h>
 #include <TThread.h>
 #include <TH1F.h>
+#include <TBenchmark.h>
 
 #include "Pixie16Class.h"
 #include "settingsSummary.h"
@@ -48,7 +49,7 @@ private:
    TThread * fillHistThread;
 
    static TH1F * h1[13][16];
-   
+
 
 public:
    MainWindow(const TGWindow *p, UInt_t w, UInt_t h);
