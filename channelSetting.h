@@ -21,6 +21,9 @@ private:
   TGNumberEntry * modIDEntry, * chIDEntry;
   
   TGComboBox * cbOnOff;
+  TGComboBox * cbPolarity;
+  TGComboBox * cbTraceOnOff;
+  TGComboBox * cbQDCsumOnOff;
   
   TGNumberEntry * entry[NUM_CHANNEL_SETTING];
   
@@ -36,6 +39,9 @@ public:
   void ChangeCh();
 
   void ChangeOnOff();
+  void ChangePolarity();
+  void ChangeTraceOnOff();  
+  void ChangeQDCsumOnOff();  
   void ChangeID(int id);
 
   bool isOpened;

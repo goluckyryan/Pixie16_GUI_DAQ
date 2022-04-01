@@ -669,7 +669,7 @@
                     188
                 ],
                 "QDCLen7": [
-                    213,
+                    214,
                     213,
                     213,
                     213,
@@ -1016,7 +1016,7 @@
                 "ChanNum": 0,
                 "CoincPattern": 0,
                 "CoincWait": 0,
-                "ControlTask": 0,
+                "ControlTask": 5,
                 "CrateID": 0,
                 "FIFOLength": 8188,
                 "FastFilterRange": 0,

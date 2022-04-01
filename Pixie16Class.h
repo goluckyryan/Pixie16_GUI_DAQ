@@ -153,6 +153,7 @@ public:
   bool GetChannelPolarity(unsigned short modID, unsigned short ch, bool verbose = false)     {return GetCSRA(CSRA_BIT::POLARITY, modID, ch, verbose);}
   bool GetChannelTraceOnOff(unsigned short modID, unsigned short ch, bool verbose = false)   {return GetCSRA(CSRA_BIT::ENABLE_TRACE, modID, ch, verbose);}
   bool GetChannelGain(unsigned short modID, unsigned short ch, bool verbose = false)         {return GetCSRA(CSRA_BIT::INPUT_RELAY, modID, ch, verbose);}
+  bool GetChannelQDCsumOnOff(unsigned short modID, unsigned short ch, bool verbose = false)   {return GetCSRA(CSRA_BIT::ENABLE_QDC, modID, ch, verbose);}
 
   void PrintChannelAllSettings(unsigned short modID, unsigned short ch);
   void PrintChannelSettingsSummary(unsigned short modID);
@@ -177,6 +178,7 @@ public:
   void SetChannelPositivePolarity(bool positive, unsigned short modID, unsigned short ch)  { SetCSRABit(CSRA_BIT::POLARITY, positive, modID, ch); }
   void SetChannelTraceOnOff(bool enable, unsigned short modID, unsigned short ch)          { SetCSRABit(CSRA_BIT::ENABLE_TRACE, enable, modID, ch); }
   void SetChannelGain(bool high, unsigned short modID, unsigned short ch)                  { SetCSRABit(CSRA_BIT::INPUT_RELAY, high, modID, ch); }
+  void SetChannelQDCsumOnOff(bool high, unsigned short modID, unsigned short ch)           { SetCSRABit(CSRA_BIT::ENABLE_QDC, high, modID, ch); }
   
   void SaveSettings(std::string fileName);
   

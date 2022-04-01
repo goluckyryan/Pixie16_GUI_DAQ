@@ -18,7 +18,7 @@ SettingsSummary::SettingsSummary(const TGWindow *p, UInt_t w, UInt_t h, Pixie16 
   settingFileName = pixie->GetSettingFile(0);
   
   fMain = new TGMainFrame(p,w,h);
-  fMain->SetWindowName("Pixie16 Channel Settings ");
+  fMain->SetWindowName("Pixie16 Settings Summary");
   fMain->Connect("CloseWindow()", "SettingsSummary", this, "CloseWindow()");
   
   gClient->GetColorByName("red", red);
@@ -56,18 +56,17 @@ SettingsSummary::SettingsSummary(const TGWindow *p, UInt_t w, UInt_t h, Pixie16 
   /// Setting
   int modID = modIDEntry->GetNumber();
   
-  int numItems = 14;
-  TString labelText[numItems] = {"CH", "ON/off", "Gain", "Trig L", "Trig G", "Threshold", "Polarity", "Energy L", "Energy G", "Tau", "Trace Len", "Trace delay", "V offset", "BaseLine"};
-  double width[numItems]     = {  50,       50,    50,     60,       60,           80,       60,       60,          60,       60,      80,           80,             70,      80};
+  int numItems = 15;
+  TString labelText[numItems] = {"CH", "ON/off", "Gain", "Trig L", "Trig G", "Threshold", "Polarity", "Energy L", "Energy G", "Tau", "Trace I/O", "Trace Len", "Trace delay", "V offset", "BaseLine"};
+  double width[numItems]     = {  50,       50,    50,     60,       60,           80,       60,       60,          60,       60,        50,         80,           80,             70,      80};
   
   TGVerticalFrame *hframeSettings = new TGVerticalFrame(fMain, w, 600 );
   fMain->AddFrame(hframeSettings, new TGLayoutHints(kLHintsCenterX, 2,2,2,2));
-  
+
+  ///---------- label row
   TGHorizontalFrame * hframeLabel = new TGHorizontalFrame(hframeSettings, w, 50);
   hframeSettings->AddFrame(hframeLabel, new TGLayoutHints(kLHintsExpandX, 2,2,2,2)); 
-  
   TGLabel * labelItems[numItems];
- 
   for(int i = 0; i < numItems; i++){
     labelItems[i] = new TGLabel(hframeLabel, Form("%s", labelText[i].Data()));
     labelItems[i]->Resize(width[i], 20);
@@ -75,8 +74,8 @@ SettingsSummary::SettingsSummary(const TGWindow *p, UInt_t w, UInt_t h, Pixie16 
     hframeLabel->AddFrame(labelItems[i], new TGLayoutHints(kLHintsCenterX | kLHintsCenterY, 5, 5, 3, 4));
   }
 
-  TGHorizontalFrame * hframeCh[MAXCH];
-    
+
+  TGHorizontalFrame * hframeCh[MAXCH];    
   for( int i = 0; i < MAXCH ; i ++){
 
     //printf("-----------------------%d\n", i);
@@ -165,18 +164,23 @@ SettingsSummary::SettingsSummary(const TGWindow *p, UInt_t w, UInt_t h, Pixie16 
     hframeCh[i]->AddFrame(neTau[i], new TGLayoutHints(kLHintsCenterX , 5, 5, 3, 4));
   
     col++;
-    double tracelen = pixie->GetChannelTraceLength(modID, i);
-    if( pixie->GetChannelTraceOnOff(modID, i) == false ) tracelen = 0;
-    neTraceLength[i] = new TGNumberEntry(hframeCh[i], tracelen, 0, 0, TGNumberFormat::kNESRealTwo, TGNumberFormat::kNEANonNegative);
+    cbTraceOnOff[i] = new TGComboBox(hframeCh[i], i);
+    cbTraceOnOff[i]->AddEntry("On", 1);
+    cbTraceOnOff[i]->AddEntry("off", 0);
+    cbTraceOnOff[i]->Resize(width[col], 20);    
+    pixie->GetChannelTraceOnOff(modID, i) ? cbTraceOnOff[i]->Select(1) : cbTraceOnOff[i]->Select(0);
+    cbTraceOnOff[i]->Connect("Selected(Int_t, Int_t)", "SettingsSummary", this, Form("ChangeTraceOnOff(=%d)", i));  
+    hframeCh[i]->AddFrame(cbTraceOnOff[i], new TGLayoutHints(kLHintsCenterX | kLHintsCenterY, 5, 5, 3, 4));
+    
+    col++;
+    neTraceLength[i] = new TGNumberEntry(hframeCh[i], pixie->GetChannelTraceLength(modID, i), 0, 0, TGNumberFormat::kNESRealTwo, TGNumberFormat::kNEANonNegative);
     neTraceLength[i]->SetWidth(width[col]);
     neTraceLength[i]->SetLimits(TGNumberFormat::kNELLimitMinMax, 0, 20.0);
     neTraceLength[i]->Connect("Modified()", "SettingsSummary", this, Form("ChangeTraceLenght(=%d)", i));     
     hframeCh[i]->AddFrame(neTraceLength[i], new TGLayoutHints(kLHintsCenterX , 5, 5, 3, 4));
     
     col++;
-    double tracedel = pixie->GetChannelTraceDelay(modID, i);
-    if( pixie->GetChannelTraceOnOff(modID, i) == false ) tracedel = 0;
-    neTraceDelay[i] = new TGNumberEntry(hframeCh[i], tracedel, 0, 0, TGNumberFormat::kNESRealTwo, TGNumberFormat::kNEANonNegative);
+    neTraceDelay[i] = new TGNumberEntry(hframeCh[i], pixie->GetChannelTraceDelay(modID, i), 0, 0, TGNumberFormat::kNESRealTwo, TGNumberFormat::kNEANonNegative);
     neTraceDelay[i]->SetWidth(width[col]);
     neTraceDelay[i]->SetLimits(TGNumberFormat::kNELLimitMinMax, 0, 20.0);
     neTraceDelay[i]->Connect("Modified()", "SettingsSummary", this, Form("ChangeTraceDelay(=%d)", i)); 
@@ -214,6 +218,7 @@ SettingsSummary::~SettingsSummary(){
     delete cbOnOff[i] ;
     delete cbGain[i] ;
     delete cbPol[i] ;
+    delete cbTraceOnOff[i];
     delete neTrigL[i] ; 
     delete neTrigG[i] ; 
     delete neThreshold[i] ;
@@ -261,6 +266,13 @@ void SettingsSummary::ChangePol(unsigned short ch){
   teFileName->SetText(settingFileName + "  (not saved)");
 }
 
+void SettingsSummary::ChangeTraceOnOff(unsigned short ch){
+  short modID = modIDEntry->GetNumber();
+  int val = cbPol[ch]->GetSelected();
+  pixie->SetChannelTraceOnOff(val, modID, ch);
+  teFileName->SetText(settingFileName + "  (not saved)");
+}
+
 void SettingsSummary::ChangeTrigL(unsigned short ch){
   short modID = modIDEntry->GetNumber();
   double val = neTrigL[ch]->GetNumber();  
@@ -305,29 +317,14 @@ void SettingsSummary::ChangeTau(unsigned short ch){
 void SettingsSummary::ChangeTraceLenght(unsigned short ch){
   short modID = modIDEntry->GetNumber();
   double val = neTraceLength[ch]->GetNumber();  
-  if( val > 0 ){
-      pixie->SetChannelTraceOnOff(true, modID, ch);
-      pixie->SetChannelTraceLenght(val, modID, ch);
-      neTraceDelay[ch]->SetNumber(pixie->GetChannelTraceDelay(modID, ch));
-  }else{
-    pixie->SetChannelTraceOnOff(false, modID, ch);
-    neTraceDelay[ch]->SetNumber(0.);
-  }
+  pixie->SetChannelTraceLenght(val, modID, ch);
   teFileName->SetText(settingFileName + "  (not saved)");
 }
 
 void SettingsSummary::ChangeTraceDelay(unsigned short ch){
   short modID = modIDEntry->GetNumber();
   double val = neTraceDelay[ch]->GetNumber();  
-
-  if( val > 0 ){
-      pixie->SetChannelTraceOnOff(true, modID, ch);
-      pixie->SetChannelTraceDelay(val, modID, ch);
-      neTraceLength[ch]->SetNumber(pixie->GetChannelTraceLength(modID, ch));
-  }else{
-    pixie->SetChannelTraceOnOff(false, modID, ch);
-    neTraceLength[ch]->SetNumber(0.);
-  }
+  pixie->SetChannelTraceDelay(val, modID, ch);
   teFileName->SetText(settingFileName + "  (not saved)");
 }
 

@@ -745,8 +745,6 @@ void Pixie16::PrintStatistics(unsigned short modID){
       printf(" %7d |", (int) (ICR * liveTime) );
       printf(" %7d \n", (int) (OCR * realTime) );
     }
-
-    
   }
 }
 
@@ -790,10 +788,7 @@ void Pixie16::SaveSettings(std::string fileName){
   }
 }
 
-
-
 void Pixie16::OpenFile(std::string fileName, bool append){
-  
   if( !outFile.is_open() ) {
     if( append ) {
       outFile.open(fileName, std::ios::out | std::ios::binary | std::ios::app);

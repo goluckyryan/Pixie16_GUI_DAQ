@@ -27,6 +27,7 @@ private:
   TGComboBox * cbOnOff[MAXCH] ;
   TGComboBox * cbGain[MAXCH] ;
   TGComboBox * cbPol[MAXCH] ;
+  TGComboBox * cbTraceOnOff[MAXCH] ;
 
   TGLabel * lbCh[MAXCH];
   TGNumberEntry * neTrigL[MAXCH] ; 
@@ -59,6 +60,7 @@ public:
   void ChangeOnOff(unsigned short ch);
   void ChangeGain(unsigned short ch);
   void ChangePol(unsigned short ch);
+  void ChangeTraceOnOff(unsigned short ch);
   void ChangeTrigL(unsigned short ch);
   void ChangeTrigG(unsigned short ch);
   void ChangeThreshold(unsigned short ch);

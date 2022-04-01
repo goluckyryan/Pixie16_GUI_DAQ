@@ -30,7 +30,7 @@ ModuleSetting::ModuleSetting(const TGWindow *p, UInt_t w, UInt_t h, Pixie16 * pi
   this->pixie = pixie; 
   
   fMain = new TGMainFrame(p,w,h);
-  fMain->SetWindowName("Pixie16 Channel Settings ");
+  fMain->SetWindowName("Pixie16 Module Settings ");
   fMain->Connect("CloseWindow()", "ModuleSetting", this, "CloseWindow()");
   
   TGVerticalFrame * vframe = new TGVerticalFrame(fMain);

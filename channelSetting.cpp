@@ -10,7 +10,9 @@
 
 #include "channelSetting.h"
 
-///---------------------------------------------- NAME,   DIGI,   unit
+//TODO set MAX
+
+///---------------------------------------------- NAME,   DIGI,   unit ... MAX
 TString settingName[NUM_CHANNEL_SETTING][3] = {{"TRIGGER_RISETIME",   "2",  "us"},
                                                {"TRIGGER_FLATTOP",    "2",  "us"},
                                                {"TRIGGER_THRESHOLD",  "0",  "ADC"},
@@ -25,14 +27,14 @@ TString settingName[NUM_CHANNEL_SETTING][3] = {{"TRIGGER_RISETIME",   "2",  "us"
                                                {"BASELINE_AVERAGE",   "0",   ""},
                                                {"BLCUT",              "0",   ""},
                                                {"EMIN",               "0",   ""},
-                                               {"QDCLen0",            "3",  "us"},
-                                               {"QDCLen1",            "3",  "us"},
-                                               {"QDCLen2",            "3",  "us"},
-                                               {"QDCLen3",            "3",  "us"},
-                                               {"QDCLen4",            "3",  "us"},
-                                               {"QDCLen5",            "3",  "us"},
-                                               {"QDCLen6",            "3",  "us"},
-                                               {"QDCLen7",            "3",  "us"},
+                                               {"QDCLen0",            "2",  "us"},
+                                               {"QDCLen1",            "2",  "us"},
+                                               {"QDCLen2",            "2",  "us"},
+                                               {"QDCLen3",            "2",  "us"},
+                                               {"QDCLen4",            "2",  "us"},
+                                               {"QDCLen5",            "2",  "us"},
+                                               {"QDCLen6",            "2",  "us"},
+                                               {"QDCLen7",            "2",  "us"},
                                                {"MultiplicityMaskL",  "0",  ""},
                                                {"MultiplicityMaskH",  "0",  ""},
                                                {"CHANNEL_CSRA",       "0",  ""}};
@@ -90,8 +92,9 @@ ChannelSetting::ChannelSetting(const TGWindow *p, UInt_t w, UInt_t h, Pixie16 * 
   int modID = modIDEntry->GetNumber();
   int ch = chIDEntry->GetNumber();
 
-  int width = 135;
+  int width = 80;
   
+  ///----------- on/off
   TGHorizontalFrame *hframeOnOff = new TGHorizontalFrame(vframe, 50, 50 );
   vframe->AddFrame(hframeOnOff, new TGLayoutHints(kLHintsRight, 2,2,2,2));
   
@@ -99,19 +102,31 @@ ChannelSetting::ChannelSetting(const TGWindow *p, UInt_t w, UInt_t h, Pixie16 * 
   cbOnOff->AddEntry("ON", 1);
   cbOnOff->AddEntry("off", 0);
   cbOnOff->Resize(width, 20);
-  if( pixie->GetChannelOnOff(modID, ch) ){
-     cbOnOff->Select(1);
-  }else{
-     cbOnOff->Select(0);
-  }
+  pixie->GetChannelOnOff(modID, ch) ? cbOnOff->Select(1) : cbOnOff->Select(0);
   cbOnOff->Connect("Selected(Int_t, Int_t)", "ChannelSetting", this, "ChangeOnOff()");  
   hframeOnOff->AddFrame(cbOnOff,  new TGLayoutHints(kLHintsRight, 5,5,3,4));
 
   TGLabel * lbOnOff = new TGLabel(hframeOnOff, "On/Off");
   hframeOnOff->AddFrame(lbOnOff, new TGLayoutHints(kLHintsRight | kLHintsCenterY, 5, 5, 3, 4));
   
+  ///----------- Polarity
+  TGHorizontalFrame *hframePol = new TGHorizontalFrame(vframe, 50, 50 );
+  vframe->AddFrame(hframePol, new TGLayoutHints(kLHintsRight, 2,2,2,2));
   
+  cbPolarity = new TGComboBox(hframePol);
+  cbPolarity->AddEntry("Positive +", 1);
+  cbPolarity->AddEntry("Negative -", 0);
+  cbPolarity->Resize(width, 20);
+  pixie->GetChannelPolarity(modID, ch) ? cbPolarity->Select(1) : cbPolarity->Select(0);
+  cbPolarity->Connect("Selected(Int_t, Int_t)", "ChannelSetting", this, "ChangeOnOff()");  
+  hframePol->AddFrame(cbPolarity,  new TGLayoutHints(kLHintsRight, 5,5,3,4));
+
+  TGLabel * lbPol = new TGLabel(hframePol, "Polarity");
+  hframePol->AddFrame(lbPol, new TGLayoutHints(kLHintsRight | kLHintsCenterY, 5, 5, 3, 4));
   
+
+
+  ///----- all other
   TGHorizontalFrame *hframe[NUM_CHANNEL_SETTING];
   TGLabel * lb[NUM_CHANNEL_SETTING];
   
@@ -119,6 +134,39 @@ ChannelSetting::ChannelSetting(const TGWindow *p, UInt_t w, UInt_t h, Pixie16 * 
     hframe[i] = new TGHorizontalFrame(vframe, 50, 50 );
     vframe->AddFrame(hframe[i], new TGLayoutHints(kLHintsRight, 2,2,2,2));
   
+    ///----------- Trace on/off
+    if(settingName[i][0] == "TAU"){ 
+      TGHorizontalFrame *hframeTraceOnOff = new TGHorizontalFrame(vframe, 50, 50 );
+      vframe->AddFrame(hframeTraceOnOff, new TGLayoutHints(kLHintsRight, 2,2,2,2));
+      
+      cbTraceOnOff = new TGComboBox(hframeTraceOnOff);
+      cbTraceOnOff->AddEntry("On", 1);
+      cbTraceOnOff->AddEntry("Off", 0);
+      cbTraceOnOff->Resize(width, 20);
+      pixie->GetChannelTraceOnOff(modID, ch) ? cbTraceOnOff->Select(1) : cbTraceOnOff->Select(0);
+      cbTraceOnOff->Connect("Selected(Int_t, Int_t)", "ChannelSetting", this, "ChangeOnOff()");  
+      hframeTraceOnOff->AddFrame(cbTraceOnOff,  new TGLayoutHints(kLHintsRight, 5,5,3,4));
+
+      TGLabel * lbTraceOnOff = new TGLabel(hframeTraceOnOff, "Trace On/Off");
+      hframeTraceOnOff->AddFrame(lbTraceOnOff, new TGLayoutHints(kLHintsRight | kLHintsCenterY, 5, 5, 3, 4));
+    }
+    ///----------- QDC sum on/off
+    if( settingName[i][0] == "EMIN"){ 
+      TGHorizontalFrame *hframeQDCsumOnOff = new TGHorizontalFrame(vframe, 50, 50 );
+      vframe->AddFrame(hframeQDCsumOnOff, new TGLayoutHints(kLHintsRight, 2,2,2,2));
+      
+      cbQDCsumOnOff = new TGComboBox(hframeQDCsumOnOff);
+      cbQDCsumOnOff->AddEntry("On", 1);
+      cbQDCsumOnOff->AddEntry("Off", 0);
+      cbQDCsumOnOff->Resize(width, 20);
+      pixie->GetChannelQDCsumOnOff(modID, ch) ? cbQDCsumOnOff->Select(1) : cbQDCsumOnOff->Select(0);
+      cbQDCsumOnOff->Connect("Selected(Int_t, Int_t)", "ChannelSetting", this, "ChangeQDCsumOnOff()");  
+      hframeQDCsumOnOff->AddFrame(cbQDCsumOnOff,  new TGLayoutHints(kLHintsRight, 5,5,3,4));
+
+      TGLabel * lbQDCsumOnOff = new TGLabel(hframeQDCsumOnOff, "Trace On/Off");
+      hframeQDCsumOnOff->AddFrame(lbQDCsumOnOff, new TGLayoutHints(kLHintsRight | kLHintsCenterY, 5, 5, 3, 4));
+    }
+    
     double temp = pixie->GetChannelSetting(settingName[i][0].Data(), modID, ch, false);
     
     TGNumberFormat::EStyle digi = TGNumberFormat::kNESInteger;
@@ -130,8 +178,11 @@ ChannelSetting::ChannelSetting(const TGWindow *p, UInt_t w, UInt_t h, Pixie16 * 
     entry[i] = new TGNumberEntry(hframe[i], temp, 0, 0, digi, TGNumberFormat::kNEANonNegative);
     entry[i]->Resize(width, 20);
     
-    entry[i]->Connect("Modified()", "ChannelSetting", this, Form("ChangeID(=%d)", i));  
-    
+    if( i >= NUM_CHANNEL_SETTING - 3 ) {
+      entry[i]->SetState(false);
+    }else{
+      entry[i]->Connect("Modified()", "ChannelSetting", this, Form("ChangeID(=%d)", i));  
+    }
     hframe[i]->AddFrame(entry[i], new TGLayoutHints(kLHintsRight, 5,5,3,4));
   
     lb[i] = new TGLabel(hframe[i], settingName[i][0] +  (settingName[i][2] != "" ? " [" + settingName[i][2] + "]" : ""));
@@ -155,7 +206,10 @@ ChannelSetting::~ChannelSetting(){
   delete modIDEntry;
   
   delete cbOnOff;
- 
+  delete cbTraceOnOff;
+  delete cbPolarity;
+  delete cbQDCsumOnOff;
+  
   for ( int i = 0; i < NUM_CHANNEL_SETTING; i++){
     delete entry[i];
   }
@@ -176,11 +230,9 @@ void ChannelSetting::ChangeCh(){
   int modID = modIDEntry->GetNumber();
   int ch = chIDEntry->GetNumber();
   
-  if( pixie->GetChannelOnOff(modID, ch) ){
-     cbOnOff->Select(1);
-  }else{
-     cbOnOff->Select(0);
-  }
+  pixie->GetChannelOnOff(modID, ch) ? cbOnOff->Select(1) : cbOnOff->Select(0);
+  pixie->GetChannelPolarity(modID, ch) ? cbPolarity->Select(1) : cbPolarity->Select(0);
+  pixie->GetChannelTraceOnOff(modID, ch) ? cbTraceOnOff->Select(1) : cbTraceOnOff->Select(0);
   
   for( int i = 0 ; i < NUM_CHANNEL_SETTING; i++){
     double temp = pixie->GetChannelSetting(settingName[i][0].Data(), modID, ch, false);    
@@ -195,6 +247,33 @@ void ChannelSetting::ChangeOnOff(){
   int val = cbOnOff->GetSelected();
 
   pixie->SetChannelOnOff(val, modID, ch);
+  pixie->SaveSettings(pixie->GetSettingFile(modIDEntry->GetNumber()));
+}
+
+void ChannelSetting::ChangePolarity(){
+  short modID = modIDEntry->GetNumber();
+  short ch = chIDEntry->GetNumber();
+  int val = cbPolarity->GetSelected();
+  
+  pixie->SetChannelPositivePolarity(val, modID, ch);
+  pixie->SaveSettings(pixie->GetSettingFile(modIDEntry->GetNumber()));
+}
+
+void ChannelSetting::ChangeTraceOnOff(){
+  short modID = modIDEntry->GetNumber();
+  short ch = chIDEntry->GetNumber();
+  int val = cbTraceOnOff->GetSelected();
+  
+  pixie->SetChannelTraceOnOff(val, modID, ch);
+  pixie->SaveSettings(pixie->GetSettingFile(modIDEntry->GetNumber()));
+}
+
+void ChannelSetting::ChangeQDCsumOnOff(){
+  short modID = modIDEntry->GetNumber();
+  short ch = chIDEntry->GetNumber();
+  int val = cbQDCsumOnOff->GetSelected();
+  
+  pixie->SetChannelQDCsumOnOff(val, modID, ch);
   pixie->SaveSettings(pixie->GetSettingFile(modIDEntry->GetNumber()));
 }
 
