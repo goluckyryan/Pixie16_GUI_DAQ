@@ -22,15 +22,26 @@ private:
   
   TGTextEntry * entry[NUM_MOD_SETTING];
   
+  TGComboBox * cbSyncWait;
+  TGComboBox * cbInSych;
+  
+  TGComboBox * cbSlowFilterRange;
+  TGComboBox * cbFastFilterRange;
+  
+  
   Pixie16 * pixie;
 
 public:
   ModuleSetting(const TGWindow *p, UInt_t w, UInt_t h, Pixie16 * pixie);
   virtual ~ModuleSetting();
 
-  void CloseWindow() { printf("close window\n"); delete this; }
+  void CloseWindow() { printf("close ModuleSetting window\n"); delete this; }
 
   void ChangeMod();
+  
+  void ChangeSyncWait();
+  void ChangeInSync();
+  void ChangeSlowFilterRange();
 
   bool isOpened;
   

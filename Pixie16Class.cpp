@@ -406,7 +406,7 @@ void Pixie16::ReadData(unsigned short modID){
     if( CheckError("Pixie16CheckExternalFIFOStatus") < 0 ) return;
     ///if(nFIFOWords *1.0 / EXTERNAL_FIFO_LENGTH > 0.2) {
     if(nFIFOWords  > 0) {
-      //printf("\033[1;31m####### READ DATA \033[m: number of word in module-%d FIFO : %d \n", modID, nFIFOWords);
+      ///printf("\033[1;31m####### READ DATA \033[m: number of word in module-%d FIFO : %d (%.2f kB)\n", modID, nFIFOWords, nFIFOWords*4./1024.);
       if( ExtFIFO_Data != NULL ) delete ExtFIFO_Data;
       ExtFIFO_Data = new unsigned int [nFIFOWords];
       retval = Pixie16ReadDataFromExternalFIFO(ExtFIFO_Data, nFIFOWords, modID);

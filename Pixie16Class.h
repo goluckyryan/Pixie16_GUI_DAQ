@@ -116,7 +116,6 @@ public:
   void CaptureADCTrace(unsigned short modID, unsigned short ch);
   int GetADCTraceLength()          {return 8192;}
   unsigned short * GetADCTrace()   {return ADCTrace;}
-  
   ///========================= Setting
 
   unsigned int GetNumModule() {return NumModules;}
@@ -124,6 +123,7 @@ public:
   unsigned short GetDigitizerRev(unsigned short modID) { return ModRev[modID];}
   unsigned short GetDigitizerADCBits(unsigned short modID) { return ModADCBits[modID];}
   unsigned short GetDigitizerNumChannel(unsigned short modID) { return numChannels[modID];}
+  unsigned short GetDigitizerSamplingRate(unsigned short modID) { return ModADCMSPS[modID];}
   std::string GetSettingFile(unsigned modID)  {return DSPParFile[modID];}
 
   unsigned int GetDigitizerSetting(std::string parName, unsigned short modID, bool verbose = false);
@@ -133,6 +133,7 @@ public:
   void SetDigitizerSetting(std::string parName, unsigned int val, unsigned short modID, bool verbose = false);
   void SetDigitizerSynchWait(unsigned int val, unsigned short modID)              { SetDigitizerSetting("SYNCH_WAIT", val, modID, 1);}
   void SetDigitizerInSynch(unsigned int val, unsigned short modID)                { SetDigitizerSetting("IN_SYNCH", val, modID, 1);}
+  void SetDigitizerSlowFilterRange(unsigned int val, unsigned short modID)        { SetDigitizerSetting("SLOW_FILTER_RANGE", val, modID, 1);}
   void SetDigitizerPresetRunTime(double val_in_sec, unsigned short modID)   { SetDigitizerSetting("HOST_RT_PRESET", Decimal2IEEEFloating(val_in_sec), modID, 1);}
   
   double GetChannelSetting(std::string parName, unsigned short modID, unsigned short ch, bool verbose = false);

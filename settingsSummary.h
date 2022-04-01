@@ -54,7 +54,7 @@ public:
   virtual ~SettingsSummary();
 
   
-  void CloseWindow() { printf("close window\n"); delete this; }
+  void CloseWindow() { printf("close SettingsSummary window\n"); delete this; }
   
   void ChangeOnOff(unsigned short ch);
   void ChangeGain(unsigned short ch);

@@ -1016,7 +1016,7 @@
                 "ChanNum": 0,
                 "CoincPattern": 0,
                 "CoincWait": 0,
-                "ControlTask": 5,
+                "ControlTask": 23,
                 "CrateID": 0,
                 "FIFOLength": 8188,
                 "FastFilterRange": 0,
@@ -1040,7 +1040,7 @@
                     0
                 ],
                 "HostRunTimePreset": 1092616192,
-                "InSynch": 1,
+                "InSynch": 0,
                 "MaxEvents": 0,
                 "ModCSRA": 0,
                 "ModCSRB": 1,

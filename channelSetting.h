@@ -28,7 +28,7 @@ public:
   ChannelSetting(const TGWindow *p, UInt_t w, UInt_t h, Pixie16 * pixie);
   virtual ~ChannelSetting();
 
-  void CloseWindow() { printf("close window\n"); delete this; }
+  void CloseWindow() { printf("close ChannelSetting window\n"); delete this; }
 
   void ChangeMod();
   void ChangeCh();

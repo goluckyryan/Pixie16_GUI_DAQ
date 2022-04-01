@@ -11,6 +11,33 @@
 #include "channelSetting.h"
 
 
+TString settingName[NUM_CHANNEL_SETTING] = { "TRIGGER_RISETIME",   
+                                             "TRIGGER_FLATTOP",    
+                                             "TRIGGER_THRESHOLD",  
+                                             "ENERGY_RISETIME",    
+                                             "ENERGY_FLATTOP",     
+                                             "TAU",                
+                                             "TRACE_LENGTH",       
+                                             "TRACE_DELAY",        
+                                             "VOFFSET",            
+                                             "XDT",                
+                                             "BASELINE_PERCENT",   
+                                             "BASELINE_AVERAGE",   
+                                             "BLCUT",              
+                                             "EMIN",               
+                                             "QDCLen0",            
+                                             "QDCLen1",            
+                                             "QDCLen2",            
+                                             "QDCLen3",            
+                                             "QDCLen4",            
+                                             "QDCLen5",            
+                                             "QDCLen6",            
+                                             "QDCLen7",            
+                                             "MultiplicityMaskL",  
+                                             "MultiplicityMaskH",  
+                                             "CHANNEL_CSRA"};
+
+
 ChannelSetting::ChannelSetting(const TGWindow *p, UInt_t w, UInt_t h, Pixie16 * pixie){
   
   this->pixie = pixie; 
@@ -41,40 +68,12 @@ ChannelSetting::ChannelSetting(const TGWindow *p, UInt_t w, UInt_t h, Pixie16 * 
 
   chIDEntry = new TGNumberEntry(hframe0, 0, 0, 0, TGNumberFormat::kNESInteger, TGNumberFormat::kNEANonNegative);
   chIDEntry->SetWidth(50);
-  chIDEntry->SetLimits(TGNumberFormat::kNELLimitMinMax, 0, MAXCH);
+  chIDEntry->SetLimits(TGNumberFormat::kNELLimitMinMax, 0, MAXCH-1);
   chIDEntry->Connect("Modified()", "ChannelSetting", this, "ChangeCh()"); 
   hframe0->AddFrame(chIDEntry, new TGLayoutHints(kLHintsCenterX , 5, 5, 3, 4));
   
   int modID = modIDEntry->GetNumber();
   int ch = chIDEntry->GetNumber();
-  
-  TString settingName[NUM_CHANNEL_SETTING] = {
-                                               "TRIGGER_RISETIME",   
-                                               "TRIGGER_FLATTOP",    
-                                               "TRIGGER_THRESHOLD",  
-                                               "ENERGY_RISETIME",    
-                                               "ENERGY_FLATTOP",     
-                                               "TAU",                
-                                               "TRACE_LENGTH",       
-                                               "TRACE_DELAY",        
-                                               "VOFFSET",            
-                                               "XDT",                
-                                               "BASELINE_PERCENT",   
-                                               "BASELINE_AVERAGE",   
-                                               "BLCUT",              
-                                               "EMIN",               
-                                               "QDCLen0",            
-                                               "QDCLen1",            
-                                               "QDCLen2",            
-                                               "QDCLen3",            
-                                               "QDCLen4",            
-                                               "QDCLen5",            
-                                               "QDCLen6",            
-                                               "QDCLen7",            
-                                               "MultiplicityMaskL",  
-                                               "MultiplicityMaskH",  
-                                               "CHANNEL_CSRA",             
-                            };
   
   TGHorizontalFrame *hframe[NUM_CHANNEL_SETTING];
   TGLabel * lb[NUM_CHANNEL_SETTING];
@@ -125,13 +124,17 @@ ChannelSetting::~ChannelSetting(){
 
 
 void ChannelSetting::ChangeMod(){
-  
-  
-  
+  ChangeCh();
 }
 
 void ChannelSetting::ChangeCh(){
   
+  int modID = modIDEntry->GetNumber();
+  int ch = chIDEntry->GetNumber();
   
+  for( int i = 0 ; i < NUM_CHANNEL_SETTING; i++){
+    double temp = pixie->GetChannelSetting(settingName[i].Data(), modID, ch, false);    
+    entry[i]->SetText( Form("%f", temp) );
+  }
   
 }

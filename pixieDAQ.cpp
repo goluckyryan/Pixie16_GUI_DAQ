@@ -174,9 +174,12 @@ MainWindow::MainWindow(const TGWindow *p,UInt_t w,UInt_t h) {
 
   /// Initialize the layout algorithm
   fMain->Resize(fMain->GetDefaultSize());
-
+  fMain->SetWMPosition(200, 200); //does not work??
+  
   /// Map main frame
   fMain->MapWindow();
+
+  
   
   /// setup thread
   thread = new TThread("hahaha", SaveData, (void *) 1);
@@ -448,15 +451,21 @@ void * MainWindow::SaveData(void* ptr){
   TBenchmark localClock;
   localClock.Reset();
   localClock.Start("timer");
+  
+  int pauseTime = 500 ; ///msec
 
   while( pixie->IsRunning() ){
     
-    usleep(500*1000); /// 500 msec
+    if( pauseTime > 10 ) usleep(pauseTime*1000); 
     
     if( !pixie->IsRunning() ) break;
     
     pixie->ReadData(0);
     pixie->SaveData();
+    
+    double MByteRead = pixie->GetnFIFOWords()*4./1024./1024.;
+    
+    if( MByteRead > 70 && pauseTime > 10) pauseTime = pauseTime - 20;
     
     //TODO Fill HISTORGRAM;
     time_t now = time(0);
@@ -478,7 +487,8 @@ void * MainWindow::SaveData(void* ptr){
     oldFileSize = newFileSize;
     oldTime = newTime;
 
-    teLog->AddLine(Form("[%4d-%02d-%02d %02d:%02d:%02d] File Size : %.2f MB [%.2f MB/s]", year, month, day, hour, minute, secound, newFileSize, rate));
+    teLog->AddLine(Form("[%4d-%02d-%02d %02d:%02d:%02d] File Size : %.2f MB [%.2f MB/s], %.2f MB readed", 
+                year, month, day, hour, minute, secound, newFileSize, rate, MByteRead));
     teLog->LineDown();
 
     
