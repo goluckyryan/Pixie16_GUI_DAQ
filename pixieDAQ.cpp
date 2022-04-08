@@ -31,6 +31,8 @@ enum MenuIdentifiers{
   
 };
 
+//TODO timed Run, //pixie->SetDigitizerPresetRunTime(100000, 0);
+
 ///make static members 
 Pixie16 * MainWindow::pixie = NULL;
 TGTextEdit * MainWindow::teLog = NULL;
@@ -452,7 +454,7 @@ void * MainWindow::SaveData(void* ptr){
   localClock.Reset();
   localClock.Start("timer");
   
-  int pauseTime = 500 ; ///msec
+  int pauseTime = 10 ; ///msec
 
   while( pixie->IsRunning() ){
     
@@ -461,36 +463,41 @@ void * MainWindow::SaveData(void* ptr){
     if( !pixie->IsRunning() ) break;
     
     pixie->ReadData(0);
-    pixie->SaveData();
     
-    double MByteRead = pixie->GetnFIFOWords()*4./1024./1024.;
+    if( pixie->GetnFIFOWords() > 0 ) {
+      pixie->SaveData();
     
-    if( MByteRead > 70 && pauseTime > 10) pauseTime = pauseTime - 20;
-    
-    //TODO Fill HISTORGRAM;
-    time_t now = time(0);
-    tm * ltm = localtime(&now);
-    int year = 1900 + ltm->tm_year;
-    int month = 1 + ltm->tm_mon;
-    int day = ltm->tm_mday;
-    int hour = ltm->tm_hour;
-    int minute = ltm->tm_min;
-    int secound = ltm->tm_sec;
-    
-    newFileSize = pixie->GetFileSize()/1024./1024.;
-    
-    localClock.Stop("timer");
-    newTime = localClock.GetRealTime("timer"); /// sec
-    localClock.Start("timer");
-    
-    double rate = (newFileSize - oldFileSize)/ (newTime-oldTime); 
-    oldFileSize = newFileSize;
-    oldTime = newTime;
+      localClock.Stop("timer");
+      newTime = localClock.GetRealTime("timer"); /// sec
+      localClock.Start("timer");
+      
+      if( newTime - oldTime > 1 ) {
+        //double MByteRead = pixie->GetnFIFOWords()*4./1024./1024.;
+        //if( MByteRead > 70 && pauseTime > 10) pauseTime = pauseTime - 20;
+      
+        //TODO Fill HISTORGRAM;
+        time_t now = time(0);
+        tm * ltm = localtime(&now);
+        int year = 1900 + ltm->tm_year;
+        int month = 1 + ltm->tm_mon;
+        int day = ltm->tm_mday;
+        int hour = ltm->tm_hour;
+        int minute = ltm->tm_min;
+        int secound = ltm->tm_sec;
+        
+        newFileSize = pixie->GetFileSize()/1024./1024.;
+        
+        double rate = (newFileSize - oldFileSize)/ (newTime-oldTime); 
+        oldFileSize = newFileSize;
+        oldTime = newTime;
 
-    teLog->AddLine(Form("[%4d-%02d-%02d %02d:%02d:%02d] File Size : %.2f MB [%.2f MB/s], %.2f MB readed", 
-                year, month, day, hour, minute, secound, newFileSize, rate, MByteRead));
-    teLog->LineDown();
-    
+        //teLog->AddLine(Form("[%4d-%02d-%02d %02d:%02d:%02d] File Size : %.2f MB [%.2f MB/s], %.2f MB readed", 
+        //                     year, month, day, hour, minute, secound, newFileSize, rate, MByteRead));
+        teLog->AddLine(Form("[%4d-%02d-%02d %02d:%02d:%02d] File Size : %.2f MB [%.2f MB/s]", 
+                             year, month, day, hour, minute, secound, newFileSize, rate));
+        teLog->LineDown();
+      }
+    }
   }
   
   pixie->ReadData(0);

@@ -196,6 +196,8 @@ public:
 
   void CheckExternalFIFOWords(unsigned short modID);
   void ReadData(unsigned short modID);
+  unsigned int ScanNumDataBlockInExtFIFO();
+  
   
   unsigned int GetTotalNumWords() {return totNumFIFOWords;}
   unsigned int GetnFIFOWords() {return nFIFOWords;}

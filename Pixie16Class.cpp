@@ -424,6 +424,19 @@ void Pixie16::ReadData(unsigned short modID){
   }
 }
 
+unsigned int Pixie16::ScanNumDataBlockInExtFIFO(){
+  
+  unsigned int numDataBlock = 0;
+  unsigned int nextWordtemp = nextWord;
+  
+  while( nextWordtemp < nFIFOWords ){
+    nextWordtemp  += (ExtFIFO_Data[nextWordtemp] >> 17) & 0x3FFF;
+    numDataBlock ++;
+  }
+  
+  return numDataBlock;
+}
+
 int Pixie16::ProcessSingleData(){
   
   int breakProcessLoopFlag = 0;

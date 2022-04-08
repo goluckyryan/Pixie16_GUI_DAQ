@@ -105,7 +105,10 @@ ScalarPanel::~ScalarPanel(){
   
 }
 
+///=========================== Thread
 void * ScalarPanel::UpdateScalar(void * ptr){
+
+  //TODO save txt file
 
   while(updateFlag){
   
@@ -115,9 +118,8 @@ void * ScalarPanel::UpdateScalar(void * ptr){
     for( int mod = 0; mod < nMod; mod++){
       
       Pixie16ReadStatisticsFromModule (statistics, mod);
-       
-      double realTime = Pixie16ComputeRealTime (statistics, mod);
-      
+
+      double realTime = Pixie16ComputeRealTime (statistics, mod);      
       teRealTime[mod]->SetText(Form("%.2f", realTime));
        
       for( int ch = 0; ch < MAXCH ; ch ++){
@@ -127,13 +129,9 @@ void * ScalarPanel::UpdateScalar(void * ptr){
         double liveTime = Pixie16ComputeLiveTime (statistics, mod, ch);
         
         teRate[mod][ch]->SetText(Form("%.2f[%.2f] %.2f", ICR, OCR, liveTime));
-        
       }
-      
       gSystem->Sleep(updateTime); 
-      
     }
-    
   }
   
   printf("quite Update Scalar\n");
