@@ -11,7 +11,7 @@
 #include <TGraph.h>
 #include <TGTextEditor.h>
 #include <TAxis.h>
-
+#include <TF1.h>
 
 #include <unistd.h>
 #include <ctime>
@@ -118,6 +118,11 @@ MainWindow::MainWindow(const TGWindow *p,UInt_t w,UInt_t h) {
   bScope->Connect("Clicked()","MainWindow",this,"Scope()");
   hframe1->AddFrame(bScope, uniLayoutHints);
 
+  bFitTrace = new TGTextButton(hframe1,"&Fit");
+  bFitTrace->SetEnabled(false);
+  bFitTrace->Connect("Clicked()","MainWindow",this,"FitTrace()");
+  hframe1->AddFrame(bFitTrace, uniLayoutHints);
+
   ///================= Start Run group
   TGGroupFrame * group2 = new TGGroupFrame(hframe, "Start run", kHorizontalFrame);
   //hframe->AddFrame(group2, new  TGLayoutHints(kLHintsCenterX, 5,5,3,3) );
@@ -196,17 +201,41 @@ MainWindow::MainWindow(const TGWindow *p,UInt_t w,UInt_t h) {
   
   LogMsg("Boot OK and ready to run.");
   
+  gTrace = new TGraph();
+  
   ///HandleMenu(M_CH_SETTINGS_SUMMARY);
 
   
 }
 MainWindow::~MainWindow() {
-  /// Clean up used widgets: frames, buttons, layout hints
-  fMain->Cleanup();
-  delete fMain;
+
   delete fMenuBar;
   delete fMenuFile;
   delete fMenuSettings;
+  
+  delete modIDEntry;
+  delete chEntry;
+  delete tePath;
+  delete teLog;
+  
+  delete bStartRun;
+  delete bStopRun;
+  delete bFitTrace;
+  
+  delete pixie;
+  
+  delete settingsSummary;
+  delete moduleSetting;
+  delete channelSetting;
+  delete scalarPanel;
+  
+  delete thread;
+  delete fillHistThread;
+  
+  delete gTrace;
+  /// Clean up used widgets: frames, buttons, layout hints
+  fMain->Cleanup();
+  delete fMain;
 }
 
 
@@ -337,7 +366,8 @@ void MainWindow::Scope(){
   pixie->ReadData(0);
   pixie->StopRun();
   
-  TGraph * gTrace = new TGraph();
+  delete gTrace;
+  gTrace = new TGraph();
   
   ///printf("              next word : %u\n", pixie->GetNextWord());
   ///printf("number of word received : %u\n", pixie->GetnFIFOWords());
@@ -355,7 +385,7 @@ void MainWindow::Scope(){
       for( int i = 0 ; i < data->trace_length; i++){
         gTrace->SetPoint(i, i*dt, (data->trace)[i]);
       }
-      gTrace->GetXaxis()->SetTitle("time [us]");
+      gTrace->GetXaxis()->SetTitle("time [ns]");
       gTrace->GetXaxis()->SetRangeUser(0, data->trace_length * dt);
       gTrace->SetTitle(Form("mod-%d, ch-%02d\n", modID, ch));
       gTrace->Draw("APL");
@@ -364,6 +394,8 @@ void MainWindow::Scope(){
       fCanvas->cd();
       fCanvas->Update();
     
+      bFitTrace->SetEnabled(true);
+      
       break;
       
     }
@@ -371,6 +403,92 @@ void MainWindow::Scope(){
   
   ///printf("=============== finished \n");
   
+}
+
+Double_t standardPulse(Double_t *x, Double_t * par){
+  
+  /// par[0] = start time
+  /// par[1] = rise time
+  /// par[2] = decay time
+  /// par[3] = amplitude
+  /// par[4] = baseline
+  
+  Double_t z = x[0] - par[0];
+  
+  if( z <= 0 ) {
+    return par[4];
+  }else{
+    return par[3]*(1-TMath::Exp(-1*z/par[1]))*TMath::Exp(-1*z/par[2]) + par[4];
+  }
+
+}
+
+
+void MainWindow::FitTrace(){
+  
+  int modID = modIDEntry->GetNumber();
+  int ch = chEntry->GetNumber();
+
+  ///estimation of parameter;
+  double t0 = pixie->GetChannelTraceDelay(modID, ch)*1000.;
+
+  double x, y;
+  double xMin = 1e10, xMax = 0, yMin = 1e10, yMax = 0;
+  int nData = gTrace->GetN();
+  for( int i = 0 ; i < nData ; i++){
+    gTrace->GetPoint(i, x, y);
+    if( x < xMin) xMin = x;
+    if( x > xMax) xMax = x;
+    if( y < yMin) yMin = y;
+    if( y > yMax) yMax = y;
+  }
+  
+  ///printf("%f %f %f %f\n", xMin, xMax, yMin, yMax);
+  
+  double baseline = yMin;
+  double amp = yMax-yMin;
+  
+  double riseTime = 200;
+  double decayTime = 40000;
+  
+  ///printf("  t0 : %f ns\n", t0);
+  ///printf("   r : %f ns\n", riseTime);
+  ///printf("   d : %f ns\n", decayTime);
+  ///printf(" amp : %f ns\n", amp);
+  ///printf("  bl : %f ns\n", baseline);
+  
+  TF1 * traceFunc = new TF1("fit", standardPulse, xMin + t0*0.1, xMax - t0*0.1, 5);
+  
+  traceFunc->SetNpx(1000);
+  traceFunc->SetParameter(0, t0);
+  traceFunc->SetParameter(1, riseTime); /// ns
+  traceFunc->SetParameter(2, decayTime); /// ns
+  traceFunc->SetParameter(3, amp);
+  traceFunc->SetParameter(4, baseline);
+  
+  traceFunc->SetParLimits(0, t0*0.9, t0*1.1);
+  traceFunc->SetParLimits(1, 10., 500);
+  traceFunc->SetParLimits(2, 10., 100000);
+  traceFunc->SetParLimits(3, 10., yMax);
+  traceFunc->SetParLimits(4, 10., 2*yMin);
+  
+  gTrace->Fit("fit", "qR0");
+  
+  traceFunc->Draw("same");
+  
+  TCanvas *fCanvas = fEcanvas->GetCanvas();
+  fCanvas->cd();
+  fCanvas->Update();
+  
+  LogMsg("========= fit result");
+  TString text[5] ={"start time", "rise time", "decay time", "amp", "baseline"};
+  TString unit[5] ={"ns", "ns", "ns", "unit", "unit"};
+  
+  for( int i = 0; i < 5; i++){
+    LogMsg(Form(" %10s : %8.2f(%8.2f) %s", text[i].Data(), traceFunc->GetParameter(i), traceFunc->GetParError(i), unit[i].Data()));
+  }
+  
+  delete traceFunc;
 }
 
 

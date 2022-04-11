@@ -8,6 +8,7 @@
 #include <TGTextEdit.h>
 #include <TThread.h>
 #include <TH1F.h>
+#include <TGraph.h>
 #include <TBenchmark.h>
 
 #include "Pixie16Class.h"
@@ -36,7 +37,9 @@ private:
    
    TGTextButton *bStartRun;
    TGTextButton *bStopRun;
-   
+
+   TGTextButton *bFitTrace;
+
    static Pixie16 * pixie;
    
    SettingsSummary * settingsSummary;
@@ -50,6 +53,8 @@ private:
 
    static TH1F * h1[13][16];
 
+   TGraph * gTrace;
+
 
 public:
    MainWindow(const TGWindow *p, UInt_t w, UInt_t h);
@@ -60,6 +65,7 @@ public:
    void GetADCTrace();
    void GetBaseLine();
    void Scope();
+   void FitTrace();
 
    void StartRun();
    static void * SaveData(void* ptr ); /// thread
@@ -68,6 +74,7 @@ public:
    void OpenScalar();
 
    static void * FillHistogram(void * ptr); /// thread
+
 
    void LogMsg(TString msg);
 
