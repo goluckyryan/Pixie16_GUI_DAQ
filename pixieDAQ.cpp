@@ -442,20 +442,12 @@ void MainWindow::FitTrace(){
     if( y < yMin) yMin = y;
     if( y > yMax) yMax = y;
   }
-  
-  ///printf("%f %f %f %f\n", xMin, xMax, yMin, yMax);
-  
+
   double baseline = yMin;
   double amp = yMax-yMin;
   
   double riseTime = 200;
   double decayTime = 40000;
-  
-  ///printf("  t0 : %f ns\n", t0);
-  ///printf("   r : %f ns\n", riseTime);
-  ///printf("   d : %f ns\n", decayTime);
-  ///printf(" amp : %f ns\n", amp);
-  ///printf("  bl : %f ns\n", baseline);
   
   TF1 * traceFunc = new TF1("fit", standardPulse, xMin + t0*0.1, xMax - t0*0.1, 5);
   

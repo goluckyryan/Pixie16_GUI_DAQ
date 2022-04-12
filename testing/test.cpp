@@ -185,7 +185,7 @@ int main(int argc, char *argv[]){
   pixie->PrintDigitizerSettings(0);
 
   int ch = 6;
-  double time = 4.0; ///sec
+  double time = 1.0; ///sec
 
   pixie->PrintChannelAllSettings(0, ch);
   
@@ -200,23 +200,41 @@ int main(int argc, char *argv[]){
   
   pixie->StartRun(1);
   
-  std::thread kakakaka(ProcessData);
+  ///std::thread kakakaka(ProcessData);
   
   while( CurrentTime - StartTime < time * 1000 ){
     
     pixie->ReadData(0);
     if( pixie->GetnFIFOWords() > 0 ) pixie->SaveData();  
     
-    if( pixie->GetnFIFOWords() > 0 ) {/// msec
-      printf("number of dataBlack read : %u\n", pixie->ScanNumDataBlockInExtFIFO());
+    //if( pixie->GetnFIFOWords() > 0 ) {/// msec
+    //  printf("number of dataBlack read : %u\n", pixie->ScanNumDataBlockInExtFIFO());
+    //}
+    
+    //TODO a quick way to read and fill histogram; the most time consumping part is filling trace 
+    
+    
+    unsigned int nData = pixie->ScanNumDataBlockInExtFIFO();
+    unsigned short * energies =  pixie->GetFIFOEnergies();
+    unsigned short * channels =  pixie->GetFIFOChannels();
+    //unsigned long long * timestamps = pixie->GetFIFOTimestamps();
+    
+    for( unsigned int h = 0; h < nData; h++) {
+      //printf(" %3u| %8u,  %8u , %20llu\n", h, channels[h],  energies[h], timestamps[h]);
+      hch->Fill(channels[h] );
+      hE->Fill( energies[h] );
     }
     
-    //TODO a quick way to read and fill histogram; the most time consumping part is filling trace
-    
-    if( ElapsedTime > 1000 ) {
+    if( ElapsedTime > 500 ) {
         pixie->PrintStatistics(0);
         PresenTime = CurrentTime;
         ElapsedTime = 0;
+        
+        canvas->cd(1); hch->Draw();
+        canvas->cd(2); hE->Draw();
+        canvas->Modified();
+        canvas->Update();
+        gSystem->ProcessEvents();
     }
     
     CurrentTime = get_time();
@@ -227,6 +245,20 @@ int main(int argc, char *argv[]){
   
   pixie->StopRun();
   pixie->CloseFile();
+  
+  unsigned int nData = pixie->ScanNumDataBlockInExtFIFO();
+  unsigned short * energies =  pixie->GetFIFOEnergies();
+  unsigned short * channels =  pixie->GetFIFOChannels();
+  for( unsigned int h = 0; h < nData; h++) {
+    //printf(" %3u| %8u,  %8u , %20llu\n", h, channels[h],  energies[h], timestamps[h]);
+    hch->Fill(channels[h] );
+    hE->Fill( energies[h] );
+  }
+  canvas->cd(1); hch->Draw();
+  canvas->cd(2); hE->Draw();
+  canvas->Modified();
+  canvas->Update();
+  gSystem->ProcessEvents();
   
   printf("===================================\n");
   pixie->PrintStatistics(0);

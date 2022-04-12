@@ -6,6 +6,8 @@
 #include "pixie16/pixie16.h"
 #include "DataBlock.h"
 
+#define MAXFIFODATABLOCK 1000  ///max FIFO Datablack for one read
+
 enum CSRA_BIT{
   FAST_TRIGGER           = 0x00000001,
   M_VALIDATION           = 0x00000002,
@@ -77,7 +79,10 @@ private:
   unsigned int * Statistics;
   unsigned int totNumFIFOWords;
 
-  
+  unsigned short * FIFOChannels;
+  unsigned short * FIFOEnergies;
+  unsigned long long *  FIFOTimestamps;
+  unsigned int FIFONumDataBlock;
   
   double Baselines[3640], TimeStamps[3640];  ///for baseline
   unsigned short ADCTrace[8192];
@@ -196,15 +201,20 @@ public:
 
   void CheckExternalFIFOWords(unsigned short modID);
   void ReadData(unsigned short modID);
-  unsigned int ScanNumDataBlockInExtFIFO();
-  
   
   unsigned int GetTotalNumWords() {return totNumFIFOWords;}
   unsigned int GetnFIFOWords() {return nFIFOWords;}
   unsigned int GetNextWord()   {return nextWord;}
   DataBlock *  GetData()       {return data;}
+
   int ProcessSingleData();
-  
+  unsigned int ScanNumDataBlockInExtFIFO(); /// also fill the FIFOEnergies, FIFOChannels, FIFOTimestamps, output FIFONumDataBlock
+  unsigned int          GetFIFONumDataBlock()  {return FIFONumDataBlock;}
+  unsigned short *      GetFIFOEnergies()      {return FIFOEnergies;}
+  unsigned short *      GetFIFOChannels()      {return FIFOChannels;}
+  unsigned long long *  GetFIFOTimestamps()    {return FIFOTimestamps;}
+
+
   void PrintExtFIFOWords() {
     unsigned int nWords = (ExtFIFO_Data[nextWord] >> 17) & 0x3FFF;
     printf("------------------- print dataBlock, nWords = %d\n", nWords);

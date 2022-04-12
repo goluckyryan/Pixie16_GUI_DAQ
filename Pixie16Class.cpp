@@ -54,6 +54,11 @@ Pixie16::Pixie16(){
       ExtFIFO_Data = NULL;
       Statistics = NULL;
       
+      FIFOEnergies   = new unsigned short[MAXFIFODATABLOCK];
+      FIFOChannels   = new unsigned short[MAXFIFODATABLOCK];
+      FIFOTimestamps = new unsigned long long[MAXFIFODATABLOCK];
+      FIFONumDataBlock = 0;
+
       data = new DataBlock();
       nextWord = 0;
     
@@ -64,6 +69,10 @@ Pixie16::Pixie16(){
 Pixie16::~Pixie16(){
   
   CloseDigitizers();
+  
+  delete FIFOEnergies;
+  delete FIFOChannels;
+  delete FIFOTimestamps;
   
   delete PXISlotMap;
   delete ch2ns;
@@ -426,15 +435,26 @@ void Pixie16::ReadData(unsigned short modID){
 
 unsigned int Pixie16::ScanNumDataBlockInExtFIFO(){
   
-  unsigned int numDataBlock = 0;
+  unsigned int FIFONumDataBlock = 0;
   unsigned int nextWordtemp = nextWord;
   
+  ///if( nextWordtemp < nFIFOWords )  printf("============= FIFOWord : %u \n", nFIFOWords);
   while( nextWordtemp < nFIFOWords ){
-    nextWordtemp  += (ExtFIFO_Data[nextWordtemp] >> 17) & 0x3FFF;
-    numDataBlock ++;
+    
+    unsigned short eventLen = (ExtFIFO_Data[nextWordtemp] >> 17) & 0x3FFF;
+    
+    FIFOEnergies[FIFONumDataBlock]   = (ExtFIFO_Data[nextWordtemp + 3] & 0xFFFF ); 
+    FIFOChannels[FIFONumDataBlock]   = (ExtFIFO_Data[nextWordtemp] & 0xF ); 
+    FIFOTimestamps[FIFONumDataBlock] = ((unsigned long long)(ExtFIFO_Data[nextWordtemp+2] & 0xFFFF) << 32) + ExtFIFO_Data[nextWordtemp+1];
+
+    nextWordtemp  += eventLen;
+    ///printf("%u | nextWordtemp %u, nextWord %u, ch %u, energy %u \n",  FIFONumDataBlock, nextWordtemp, nextWord, FIFOChannels[FIFONumDataBlock], FIFOEnergies[FIFONumDataBlock]);
+    FIFONumDataBlock ++;    
   }
+
+  nextWord = nextWordtemp - nFIFOWords ;
   
-  return numDataBlock;
+  return FIFONumDataBlock;
 }
 
 int Pixie16::ProcessSingleData(){
