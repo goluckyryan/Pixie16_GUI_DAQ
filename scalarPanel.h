@@ -8,12 +8,10 @@
 #include <TGLabel.h>
 
 #include "Pixie16Class.h"
+#include "global_macro.h"
 
 class TGWindow;
 class TGMainFrame;
-
-#define MAXCH 16
-#define MAXMOD 13
 
 class ScalarPanel{
 private:

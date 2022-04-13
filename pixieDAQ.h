@@ -12,6 +12,7 @@
 #include <TBenchmark.h>
 
 #include "Pixie16Class.h"
+#include "global_macro.h"
 #include "settingsSummary.h"
 #include "scalarPanel.h"
 #include "moduleSetting.h"
@@ -31,8 +32,11 @@ private:
    TGMenuBar          *fMenuBar;
    TGPopupMenu        *fMenuFile, *fMenuSettings;
    
-   TGNumberEntry * modIDEntry, *chEntry; 
+   static TGNumberEntry * modIDEntry, *chEntry; 
+
+   TGNumberEntry * runIDEntry;
    TGTextEntry * tePath;
+   
    static TGTextEdit * teLog;
    
    TGTextButton *bStartRun;
@@ -47,11 +51,11 @@ private:
    ChannelSetting * channelSetting;
    ScalarPanel * scalarPanel;
    
-   TThread * thread;
-
+   TThread * saveDataThread;
    TThread * fillHistThread;
 
-   static TH1F * h1[13][16];
+   static TH1F * hEnergy[MAXMOD][MAXCH];
+   static bool isEnergyHistFilled;
 
    TGraph * gTrace;
 
@@ -74,6 +78,8 @@ public:
    void OpenScalar();
 
    static void * FillHistogram(void * ptr); /// thread
+   void ChangeMod();
+   void ChangeChannel();
 
 
    void LogMsg(TString msg);

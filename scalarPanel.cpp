@@ -34,7 +34,7 @@ ScalarPanel::ScalarPanel(const TGWindow *p, UInt_t w, UInt_t h, Pixie16 * pixie)
   TGHorizontalFrame *hframe = new TGHorizontalFrame(fMain, w, 50 );
   fMain->AddFrame(hframe, new TGLayoutHints(kLHintsCenterX | kLHintsCenterY, 2,2,2,2));
   
-  int width = 30;
+  int width = 35;
   
   ///------ Channel labels
   TGVerticalFrame * hChannelLabels = new TGVerticalFrame(hframe);

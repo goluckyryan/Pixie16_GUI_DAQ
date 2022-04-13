@@ -79,10 +79,13 @@ private:
   unsigned int * Statistics;
   unsigned int totNumFIFOWords;
 
+  unsigned short * FIFOMods;
   unsigned short * FIFOChannels;
   unsigned short * FIFOEnergies;
   unsigned long long *  FIFOTimestamps;
   unsigned int FIFONumDataBlock;
+  unsigned int AccumulatedFIFONumDataBlock;
+  bool FIFOisUsed;
   
   double Baselines[3640], TimeStamps[3640];  ///for baseline
   unsigned short ADCTrace[8192];
@@ -203,17 +206,22 @@ public:
   void ReadData(unsigned short modID);
   
   unsigned int GetTotalNumWords() {return totNumFIFOWords;}
-  unsigned int GetnFIFOWords() {return nFIFOWords;}
-  unsigned int GetNextWord()   {return nextWord;}
-  DataBlock *  GetData()       {return data;}
+  unsigned int GetnFIFOWords()    {return nFIFOWords;}
+  unsigned int GetNextWord()      {return nextWord;}
+  DataBlock *  GetData()          {return data;}
 
   int ProcessSingleData();
   unsigned int ScanNumDataBlockInExtFIFO(); /// also fill the FIFOEnergies, FIFOChannels, FIFOTimestamps, output FIFONumDataBlock
+  unsigned int          GetAccumulatedFIFONumDataBlock()  {return AccumulatedFIFONumDataBlock;}
   unsigned int          GetFIFONumDataBlock()  {return FIFONumDataBlock;}
   unsigned short *      GetFIFOEnergies()      {return FIFOEnergies;}
   unsigned short *      GetFIFOChannels()      {return FIFOChannels;}
+  unsigned short *      GetFIFOMods()          {return FIFOMods;}
   unsigned long long *  GetFIFOTimestamps()    {return FIFOTimestamps;}
-
+  
+  /// FIFOisUsed is not used in this Class, it is for sync in thread
+  void SetFIFOisUsed(bool isUsed) {this->FIFOisUsed = isUsed;};
+  bool GetFIFOisUsed()            {return FIFOisUsed;}
 
   void PrintExtFIFOWords() {
     unsigned int nWords = (ExtFIFO_Data[nextWord] >> 17) & 0x3FFF;

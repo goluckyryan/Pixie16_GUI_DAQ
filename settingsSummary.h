@@ -8,11 +8,10 @@
 #include <TGLabel.h>
 
 #include "Pixie16Class.h"
+#include "global_macro.h"
 
 class TGWindow;
 class TGMainFrame;
-
-#define MAXCH 16
 
 class SettingsSummary{
 private:

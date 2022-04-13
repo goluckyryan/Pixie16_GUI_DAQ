@@ -7,12 +7,10 @@
 #include <TGLabel.h>
 
 #include "Pixie16Class.h"
+#include "global_macro.h"
 
 class TGWindow;
 class TGMainFrame;
-
-#define MAXCH 16
-#define NUM_MOD_SETTING 13
 
 class ModuleSetting{
 private:

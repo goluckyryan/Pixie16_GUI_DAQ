@@ -48,23 +48,23 @@ pixieDict.cxx : pixieDAQ.h  pixieDAQLinkDef.h
 	@echo "--------- creating pcm and cxx "
 	@rootcling -f pixieDict.cxx -c pixieDAQ.h -p $(PIXIE_LIB_PATH) pixieDAQLinkDef.h
 
-pixieDAQ.o : pixieDict.cxx pixieDAQ.cpp pixieDAQ.h  
+pixieDAQ.o : pixieDict.cxx pixieDAQ.cpp pixieDAQ.h  global_macro.h
 	@echo "--------- creating pixieDAQ.o"
 	$(CC) $(CFLAGS) $(PIXIE_LIB_PATH) pixieDAQ.cpp Pixie16Class.cpp pixieDict.cxx $(ROOT_FLAG)
 
-settingsSummary.o : settingsSummary.cpp settingsSummary.h
+settingsSummary.o : settingsSummary.cpp settingsSummary.h global_macro.h
 	@echo "--------- creating settingsSummary.o"
 	$(CC) $(CFLAGS) $(PIXIE_LIB_PATH) settingsSummary.cpp $(ROOT_FLAG)
 
-scalarPanel.o : scalarPanel.cpp scalarPanel.h
+scalarPanel.o : scalarPanel.cpp scalarPanel.h global_macro.h
 	@echo "--------- creating scalarPanel.o.o"
 	$(CC) $(CFLAGS) $(PIXIE_LIB_PATH) scalarPanel.cpp $(ROOT_FLAG)
 
-moduleSetting.o : moduleSetting.cpp moduleSetting.h
+moduleSetting.o : moduleSetting.cpp moduleSetting.h global_macro.h
 	@echo "--------- creating moduleSetting.o"
 	$(CC) $(CFLAGS) $(PIXIE_LIB_PATH) moduleSetting.cpp $(ROOT_FLAG)
 
-channelSetting.o : channelSetting.cpp channelSetting.h
+channelSetting.o : channelSetting.cpp channelSetting.h global_macro.h
 	@echo "--------- creating channelSetting.o"
 	$(CC) $(CFLAGS) $(PIXIE_LIB_PATH) channelSetting.cpp $(ROOT_FLAG)
 

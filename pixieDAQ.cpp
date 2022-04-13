@@ -37,7 +37,10 @@ enum MenuIdentifiers{
 Pixie16 * MainWindow::pixie = NULL;
 TGTextEdit * MainWindow::teLog = NULL;
 TRootEmbeddedCanvas * MainWindow::fEcanvas = NULL;
-TH1F * MainWindow::h1[13][16]={NULL};
+TGNumberEntry * MainWindow::modIDEntry = NULL;
+TGNumberEntry * MainWindow::chEntry = NULL; 
+TH1F * MainWindow::hEnergy[MAXMOD][MAXCH]={NULL};
+bool MainWindow::isEnergyHistFilled = false;
 
 MainWindow::MainWindow(const TGWindow *p,UInt_t w,UInt_t h) {
   
@@ -48,6 +51,12 @@ MainWindow::MainWindow(const TGWindow *p,UInt_t w,UInt_t h) {
   if ( pixie->GetStatus() < 0 ) {
     printf("Exiting program... \n");
     GoodBye();
+  }
+  
+  for( unsigned int i = 0; i < pixie->GetNumModule() ; i++){
+    for( int j = 0; j < MAXCH ; j++){
+      hEnergy[i][j] = new TH1F(Form("hEnergy%02d_%02d", i, j), Form("Energy mod:%02d ch:%02d", i, j), 200, 0, 160000);
+    }
   }
   
   /// Create a main frame
@@ -96,6 +105,7 @@ MainWindow::MainWindow(const TGWindow *p,UInt_t w,UInt_t h) {
   modIDEntry = new TGNumberEntry(hframe1, 0, 0, 0, TGNumberFormat::kNESInteger, TGNumberFormat::kNEANonNegative);
   modIDEntry->SetWidth(50);
   modIDEntry->SetLimits(TGNumberFormat::kNELLimitMinMax, 0, pixie->GetNumModule()-1);
+  modIDEntry->Connect("Modified()", "MainWindow", this, "ChangeMod()"); 
   hframe1->AddFrame(modIDEntry, uniLayoutHints);
   
   TGLabel * lb2 = new TGLabel(hframe1, "Ch :");
@@ -104,6 +114,7 @@ MainWindow::MainWindow(const TGWindow *p,UInt_t w,UInt_t h) {
   chEntry = new TGNumberEntry(hframe1, 0, 0, 0, TGNumberFormat::kNESInteger, TGNumberFormat::kNEANonNegative);
   chEntry->SetWidth(50);
   chEntry->SetLimits(TGNumberFormat::kNELLimitMinMax, 0, pixie->GetDigitizerNumChannel(0));
+  chEntry->Connect("Modified()", "MainWindow", this, "ChangeChannel()"); 
   hframe1->AddFrame(chEntry, uniLayoutHints);
   
   TGTextButton *bGetADCTrace = new TGTextButton(hframe1,"Get &ADC Trace");
@@ -131,9 +142,18 @@ MainWindow::MainWindow(const TGWindow *p,UInt_t w,UInt_t h) {
   TGHorizontalFrame *hframe2 = new TGHorizontalFrame(group2,200,30);
   group2->AddFrame(hframe2);
   
-  tePath = new TGTextEntry(hframe2, new TGTextBuffer(10));
-  tePath->SetText("haha.evt");
+  TGLabel * lb1Prefix = new TGLabel(hframe2, "Save Prefix:");
+  hframe2->AddFrame(lb1Prefix, uniLayoutHints);
+  
+  tePath = new TGTextEntry(hframe2, new TGTextBuffer(30));
+  tePath->SetWidth(50);
+  tePath->SetText("haha");
   hframe2->AddFrame(tePath, uniLayoutHints);
+  
+  runIDEntry = new TGNumberEntry(hframe2, 0, 0, 0, TGNumberFormat::kNESInteger, TGNumberFormat::kNEANonNegative);
+  runIDEntry->SetWidth(50);
+  runIDEntry->SetLimits(TGNumberFormat::kNELLimitMinMax, 0, 999);
+  hframe2->AddFrame(runIDEntry, uniLayoutHints);
   
   bStartRun = new TGTextButton(hframe2,"Start &Run");
   bStartRun->Connect("Clicked()","MainWindow",this,"StartRun()");
@@ -185,11 +205,9 @@ MainWindow::MainWindow(const TGWindow *p,UInt_t w,UInt_t h) {
   
   /// Map main frame
   fMain->MapWindow();
-
-  
   
   /// setup thread
-  thread = new TThread("hahaha", SaveData, (void *) 1);
+  saveDataThread = new TThread("hahaha", SaveData, (void *) 1);
   fillHistThread = new TThread("kakaka", FillHistogram, (void *) 1);
   
   settingsSummary = NULL;
@@ -229,10 +247,11 @@ MainWindow::~MainWindow() {
   delete channelSetting;
   delete scalarPanel;
   
-  delete thread;
+  delete saveDataThread;
   delete fillHistThread;
   
   delete gTrace;
+  
   /// Clean up used widgets: frames, buttons, layout hints
   fMain->Cleanup();
   delete fMain;
@@ -307,11 +326,10 @@ void MainWindow::GetADCTrace() {
   }
   gTrace->GetXaxis()->SetTitle("time [us]");
   gTrace->GetXaxis()->SetRangeUser(0, pixie->GetADCTraceLength()*dt);
-  gTrace->Draw("APL");
   
-  TCanvas *fCanvas = fEcanvas->GetCanvas();
-  fCanvas->cd();
-  fCanvas->Update();
+  fEcanvas->GetCanvas()->cd();
+  gTrace->Draw("APL");
+  fEcanvas->GetCanvas()->Update();
   
 }
 
@@ -333,11 +351,10 @@ void MainWindow::GetBaseLine(){
     gTrace->SetPoint(i, baselineTime[i]*1000, baseline[i]);
   }
   gTrace->GetXaxis()->SetTitle("time [ns]");
-  gTrace->Draw("APL");
   
-  TCanvas *fCanvas = fEcanvas->GetCanvas();
-  fCanvas->cd();
-  fCanvas->Update();
+  fEcanvas->GetCanvas()->cd();
+  gTrace->Draw("APL");
+  fEcanvas->GetCanvas()->Update();
   
 }
 
@@ -388,11 +405,10 @@ void MainWindow::Scope(){
       gTrace->GetXaxis()->SetTitle("time [ns]");
       gTrace->GetXaxis()->SetRangeUser(0, data->trace_length * dt);
       gTrace->SetTitle(Form("mod-%d, ch-%02d\n", modID, ch));
+
+      fEcanvas->GetCanvas()->cd();
       gTrace->Draw("APL");
-      
-      TCanvas *fCanvas = fEcanvas->GetCanvas();
-      fCanvas->cd();
-      fCanvas->Update();
+      fEcanvas->GetCanvas()->Update();
     
       bFitTrace->SetEnabled(true);
       
@@ -466,11 +482,9 @@ void MainWindow::FitTrace(){
   
   gTrace->Fit("fit", "qR0");
   
+  fEcanvas->GetCanvas()->cd();
   traceFunc->Draw("same");
-  
-  TCanvas *fCanvas = fEcanvas->GetCanvas();
-  fCanvas->cd();
-  fCanvas->Update();
+  fEcanvas->GetCanvas()->Update();
   
   LogMsg("========= fit result");
   TString text[5] ={"start time", "rise time", "decay time", "amp", "baseline"};
@@ -497,12 +511,23 @@ void MainWindow::GoodBye(){
 
 void MainWindow::StartRun(){
   
-  pixie->OpenFile(tePath->GetText(), false);
+  TString saveFileName = Form("%s_%03lu.evt", tePath->GetText(), runIDEntry->GetIntNumber());
   
-  LogMsg(Form("Start Run. Save data at %s.\n", tePath->GetText()));
+  pixie->OpenFile(saveFileName.Data(), false);
+  
+  LogMsg(Form("Start Run. Save data at %s.\n", saveFileName.Data()));
+  
+  ///clear histogram;
+  isEnergyHistFilled = false;
+  for( unsigned int iMod = 0 ; iMod < pixie->GetNumModule(); iMod++){
+    for( int j = 0; j < MAXCH ; j++){
+      hEnergy[iMod][j]->Reset();
+    }
+  }
   
   pixie->StartRun(1);
-  if( pixie->IsRunning() ) thread->Run(); /// call SaveData()
+  if( pixie->IsRunning() ) saveDataThread->Run(); /// call SaveData()
+  if( pixie->IsRunning() ) fillHistThread->Run(); /// call SaveData()
   
   bStartRun->SetEnabled(false);
   bStopRun->SetEnabled(true);
@@ -522,6 +547,8 @@ void MainWindow::StopRun(){
   pixie->PrintStatistics(0);
   bStartRun->SetEnabled(true);
   bStopRun->SetEnabled(false);
+  
+  runIDEntry->SetIntNumber(runIDEntry->GetIntNumber()+1);
 
 }
 
@@ -533,6 +560,25 @@ void MainWindow::OpenScalar(){
   }else{
     if( !scalarPanel->isOpened ) scalarPanel = new ScalarPanel(gClient->GetRoot(), 600, 600, pixie);
   }
+}
+
+
+void MainWindow::ChangeMod(){
+  
+  if( isEnergyHistFilled ){
+    int modID = modIDEntry->GetNumber();
+    int ch = chEntry->GetNumber();
+    
+    fEcanvas->GetCanvas()->cd();
+    hEnergy[modID][ch]->Draw();
+    fEcanvas->GetCanvas()->Update();  
+  }
+  
+}
+
+
+void MainWindow::ChangeChannel(){
+  ChangeMod();
 }
 
 
@@ -576,16 +622,20 @@ void * MainWindow::SaveData(void* ptr){
     
     if( pixie->GetnFIFOWords() > 0 ) {
       pixie->SaveData();
+      ///ScanNumDataBlockInExtFIFO() should be here after ReadData(). becasue not a whlole dataBlock is in FIFO.
+      pixie->ScanNumDataBlockInExtFIFO();  //TODO need to check the time comsumtion
+      pixie->SetFIFOisUsed(false);
     
       localClock.Stop("timer");
       newTime = localClock.GetRealTime("timer"); /// sec
       localClock.Start("timer");
+
+      ///printf("Thread[SaveData] , FIFO: %u  nData %u | %f\n", pixie->GetnFIFOWords(),  nData, newTime);
       
       if( newTime - oldTime > 1 ) {
-        //double MByteRead = pixie->GetnFIFOWords()*4./1024./1024.;
-        //if( MByteRead > 70 && pauseTime > 10) pauseTime = pauseTime - 20;
+        ///double MByteRead = pixie->GetnFIFOWords()*4./1024./1024.;
+        ///if( MByteRead > 70 && pauseTime > 10) pauseTime = pauseTime - 20;
       
-        //TODO Fill HISTORGRAM;
         time_t now = time(0);
         tm * ltm = localtime(&now);
         int year = 1900 + ltm->tm_year;
@@ -601,10 +651,10 @@ void * MainWindow::SaveData(void* ptr){
         oldFileSize = newFileSize;
         oldTime = newTime;
 
-        //teLog->AddLine(Form("[%4d-%02d-%02d %02d:%02d:%02d] File Size : %.2f MB [%.2f MB/s], %.2f MB readed", 
-        //                     year, month, day, hour, minute, secound, newFileSize, rate, MByteRead));
-        teLog->AddLine(Form("[%4d-%02d-%02d %02d:%02d:%02d] File Size : %.2f MB [%.2f MB/s]", 
-                             year, month, day, hour, minute, secound, newFileSize, rate));
+        ///teLog->AddLine(Form("[%4d-%02d-%02d %02d:%02d:%02d] File Size : %.2f MB [%.2f MB/s], %.2f MB readed", 
+        ///                     year, month, day, hour, minute, secound, newFileSize, rate, MByteRead));
+        teLog->AddLine(Form("[%4d-%02d-%02d %02d:%02d:%02d] File Size : %.2f MB [%.2f MB/s] Number of events recorded : %u", 
+                             year, month, day, hour, minute, secound, newFileSize, rate, pixie->GetAccumulatedFIFONumDataBlock()));
         teLog->LineDown();
       }
     }
@@ -621,9 +671,50 @@ void * MainWindow::SaveData(void* ptr){
 
 void * MainWindow::FillHistogram(void *ptr){
   
-  //using evtReader  or   process from ExtFIFOword, but in case in complete data
+  ///double oldTime = 0, newTime = 0;
+  ///TBenchmark localClock;
+  ///localClock.Reset();
+  ///localClock.Start("timer");
   
-  
+  while( pixie->IsRunning() ){
+    
+    if( pixie->GetFIFOisUsed() == false && pixie->GetnFIFOWords() > 0 && pixie->GetFIFONumDataBlock() > 0 ) {
+      
+      ///localClock.Stop("timer");
+      ///newTime = localClock.GetRealTime("timer"); /// sec
+      ///localClock.Start("timer");
+      
+      ///unsigned int nextWord = pixie->GetNextWord();
+      unsigned int nData = pixie->GetFIFONumDataBlock();
+      unsigned short channels[nData];
+      unsigned short energies[nData];
+      unsigned short mods[nData];
+      long long int  timestamps[nData];
+      std::memcpy(mods,     pixie->GetFIFOMods(), sizeof(unsigned short) * nData);
+      std::memcpy(channels, pixie->GetFIFOChannels(), sizeof(unsigned short) * nData);
+      std::memcpy(energies, pixie->GetFIFOEnergies(), sizeof(unsigned short) * nData);
+      std::memcpy(timestamps, pixie->GetFIFOTimestamps(), sizeof(long long int) * nData);
+    
+      ///printf("Thread[FillHistogram] ============= %u, nData : %d  | %f\n",pixie->GetnFIFOWords(), nData, newTime);
+      for( unsigned int i = 0; i < nData; i++){
+        ///printf("%3u| %2u, %3u, %7u, %llu \n", i, mods[i], channels[i], energies[i], timestamps[i]);
+        hEnergy[mods[i]][channels[i]]->Fill(energies[i]);
+      }
+      isEnergyHistFilled = true;
+      pixie->SetFIFOisUsed(true);
+      
+    }
+    
+    int modID = modIDEntry->GetNumber();
+    int ch = chEntry->GetNumber();
+
+    fEcanvas->GetCanvas()->cd();
+    hEnergy[modID][ch]->Draw();
+    fEcanvas->GetCanvas()->Update();  
+    
+    ///usleep(300*1000);
+    
+  }
   
   return ptr;
 }
