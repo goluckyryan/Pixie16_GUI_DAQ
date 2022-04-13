@@ -55,7 +55,7 @@ MainWindow::MainWindow(const TGWindow *p,UInt_t w,UInt_t h) {
   
   for( unsigned int i = 0; i < pixie->GetNumModule() ; i++){
     for( int j = 0; j < MAXCH ; j++){
-      hEnergy[i][j] = new TH1F(Form("hEnergy%02d_%02d", i, j), Form("Energy mod:%02d ch:%02d", i, j), 200, 0, 160000);
+      hEnergy[i][j] = new TH1F(Form("hEnergy%02d_%02d", i, j), Form("Energy mod:%2d ch:%02d (down scaled)", i, j), 200, 0, 160000);
     }
   }
   
