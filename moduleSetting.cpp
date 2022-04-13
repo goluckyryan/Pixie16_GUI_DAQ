@@ -48,6 +48,8 @@ ModuleSetting::ModuleSetting(const TGWindow *p, UInt_t w, UInt_t h, Pixie16 * pi
   modIDEntry->SetWidth(50);
   modIDEntry->SetLimits(TGNumberFormat::kNELLimitMinMax, 0, pixie->GetNumModule()-1);
   modIDEntry->Connect("Modified()", "ModuleSetting", this, "ChangeMod()"); 
+  if( pixie->GetNumModule() == 1 ) modIDEntry->SetState(false);
+  
   hframe0->AddFrame(modIDEntry, new TGLayoutHints(kLHintsCenterX , 5, 5, 3, 4));
   
   int modID = modIDEntry->GetNumber();

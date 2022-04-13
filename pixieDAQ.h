@@ -10,6 +10,7 @@
 #include <TH1F.h>
 #include <TGraph.h>
 #include <TBenchmark.h>
+#include <TGTextEditor.h>
 
 #include "Pixie16Class.h"
 #include "global_macro.h"
@@ -30,7 +31,7 @@ private:
    static TRootEmbeddedCanvas *fEcanvas;
    
    TGMenuBar          *fMenuBar;
-   TGPopupMenu        *fMenuFile, *fMenuSettings;
+   TGPopupMenu        *fMenuFile, *fMenuSettings, *fMenuUtility;
    
    static TGNumberEntry * modIDEntry, *chEntry; 
 
@@ -55,9 +56,12 @@ private:
    TThread * fillHistThread;
 
    static TH1F * hEnergy[MAXMOD][MAXCH];
+   static TH1F * hChannel[MAXMOD];
    static bool isEnergyHistFilled;
 
    TGraph * gTrace;
+   
+   TGTextEditor * configEditor;
 
 
 public:

@@ -35,6 +35,7 @@ SettingsSummary::SettingsSummary(const TGWindow *p, UInt_t w, UInt_t h, Pixie16 
   modIDEntry->SetWidth(50);
   modIDEntry->SetLimits(TGNumberFormat::kNELLimitMinMax, 0, pixie->GetNumModule()-1);
   modIDEntry->Connect("Modified()", "SettingsSummary", this, "ChangeMod()"); 
+  if( pixie->GetNumModule() == 1 ) modIDEntry->SetState(false);
   hframe->AddFrame(modIDEntry, new TGLayoutHints(kLHintsCenterX , 5, 5, 3, 4));
   
   TGLabel * lb2 = new TGLabel(hframe, "Setting File :");

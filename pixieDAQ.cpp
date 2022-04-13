@@ -9,7 +9,6 @@
 #include <TGLabel.h>
 #include <TGNumberEntry.h>
 #include <TGraph.h>
-#include <TGTextEditor.h>
 #include <TAxis.h>
 #include <TF1.h>
 
@@ -27,7 +26,9 @@ enum MenuIdentifiers{
   M_EXIT,
   M_CH_SETTINGS_SUMMARY,
   M_CH_SETTING,
-  M_MODULE_SETTINGS
+  M_MODULE_SETTINGS,
+  M_FINDPEAKS,
+  M_SHOW_CHANNELS_RATE
   
 };
 
@@ -40,6 +41,7 @@ TRootEmbeddedCanvas * MainWindow::fEcanvas = NULL;
 TGNumberEntry * MainWindow::modIDEntry = NULL;
 TGNumberEntry * MainWindow::chEntry = NULL; 
 TH1F * MainWindow::hEnergy[MAXMOD][MAXCH]={NULL};
+TH1F * MainWindow::hChannel[MAXMOD]={NULL};
 bool MainWindow::isEnergyHistFilled = false;
 
 MainWindow::MainWindow(const TGWindow *p,UInt_t w,UInt_t h) {
@@ -57,6 +59,7 @@ MainWindow::MainWindow(const TGWindow *p,UInt_t w,UInt_t h) {
     for( int j = 0; j < MAXCH ; j++){
       hEnergy[i][j] = new TH1F(Form("hEnergy%02d_%02d", i, j), Form("Energy mod:%2d ch:%02d (down scaled)", i, j), 200, 0, 160000);
     }
+    hChannel[i] = new TH1F(Form("hChannel%02d", i), Form("Channel Stat. mod:%2d (down scaled)", i), MAXCH, 0, MAXCH);
   }
   
   /// Create a main frame
@@ -64,15 +67,14 @@ MainWindow::MainWindow(const TGWindow *p,UInt_t w,UInt_t h) {
   ///fMain->SetWMPosition(500, 500); //does not work
   fMain->Connect("CloseWindow()", "MainWindow", this, "GoodBye()");
 
-  ///menu
+  ///======================= menu
   fMenuBar = new TGMenuBar(fMain, 1, 1, kHorizontalFrame);
   fMain->AddFrame(fMenuBar, new TGLayoutHints(kLHintsTop | kLHintsExpandX));
 
   fMenuFile = new TGPopupMenu(gClient->GetRoot());
-  fMenuFile->AddEntry("&Open...", M_FILE_OPEN);
+  fMenuFile->AddEntry("&Open Pixie16.config", M_FILE_OPEN);
   fMenuFile->AddSeparator();
   fMenuFile->AddEntry("E&xit", M_EXIT);
-  
   fMenuFile->Connect("Activated(Int_t)", "MainWindow", this, "HandleMenu(Int_t)");
   fMenuBar->AddPopup("&File",     fMenuFile,     new TGLayoutHints(kLHintsTop | kLHintsLeft, 0, 4, 0, 0));
   
@@ -81,10 +83,15 @@ MainWindow::MainWindow(const TGWindow *p,UInt_t w,UInt_t h) {
   fMenuSettings->AddEntry("&Channel Setting", M_CH_SETTING);
   fMenuSettings->AddSeparator();
   fMenuSettings->AddEntry("Digitizer &Settings", M_MODULE_SETTINGS);
-  
   fMenuSettings->Connect("Activated(Int_t)", "MainWindow", this, "HandleMenu(Int_t)");
   fMenuBar->AddPopup("&Settings", fMenuSettings, new TGLayoutHints(kLHintsTop | kLHintsLeft, 0, 4, 0, 0));
 
+  fMenuUtility = new TGPopupMenu(gClient->GetRoot());
+  fMenuUtility->AddEntry("Plot Channels Rate", M_SHOW_CHANNELS_RATE);
+  fMenuSettings->AddSeparator();
+  fMenuUtility->AddEntry("Find &Peaks", M_FINDPEAKS);
+  fMenuUtility->Connect("Activated(Int_t)", "MainWindow", this, "HandleMenu(Int_t)");
+  fMenuBar->AddPopup("&Utility", fMenuUtility, new TGLayoutHints(kLHintsTop | kLHintsLeft, 0, 4, 0, 0));
 
   TGLayoutHints * uniLayoutHints = new TGLayoutHints(kLHintsNormal, 2,2,10,0); ///left, right, top, bottom
 
@@ -106,6 +113,7 @@ MainWindow::MainWindow(const TGWindow *p,UInt_t w,UInt_t h) {
   modIDEntry->SetWidth(50);
   modIDEntry->SetLimits(TGNumberFormat::kNELLimitMinMax, 0, pixie->GetNumModule()-1);
   modIDEntry->Connect("Modified()", "MainWindow", this, "ChangeMod()"); 
+  if( pixie->GetNumModule() == 1 ) modIDEntry->SetState(false);
   hframe1->AddFrame(modIDEntry, uniLayoutHints);
   
   TGLabel * lb2 = new TGLabel(hframe1, "Ch :");
@@ -252,6 +260,8 @@ MainWindow::~MainWindow() {
   
   delete gTrace;
   
+  delete configEditor;
+  
   /// Clean up used widgets: frames, buttons, layout hints
   fMain->Cleanup();
   delete fMain;
@@ -263,6 +273,8 @@ void MainWindow::HandleMenu(Int_t id){
     
     ///========================= File Open
     case M_FILE_OPEN:{
+      
+      configEditor = new TGTextEditor("Pixie16.config", gClient->GetRoot(), 1200);
       
     }break;
     
@@ -303,6 +315,24 @@ void MainWindow::HandleMenu(Int_t id){
       
     }break;
     
+    ///====================== Show channel rate;
+    case M_SHOW_CHANNELS_RATE:{
+      
+      int modID = modIDEntry->GetNumber();
+      fEcanvas->GetCanvas()->cd();
+      hChannel[modID]->Draw();
+      fEcanvas->GetCanvas()->Update();      
+      
+    }break;
+    
+    
+    ///====================== Fit Gaussian
+    case M_FINDPEAKS:{
+      
+      LogMsg("[Find Peaks] Not impelmented");
+      
+    }break;
+    
   }
   
 }
@@ -326,6 +356,7 @@ void MainWindow::GetADCTrace() {
   }
   gTrace->GetXaxis()->SetTitle("time [us]");
   gTrace->GetXaxis()->SetRangeUser(0, pixie->GetADCTraceLength()*dt);
+  gTrace->SetTitle(Form("Trace mod:%d ch:%0d", modID, ch));
   
   fEcanvas->GetCanvas()->cd();
   gTrace->Draw("APL");
@@ -351,6 +382,7 @@ void MainWindow::GetBaseLine(){
     gTrace->SetPoint(i, baselineTime[i]*1000, baseline[i]);
   }
   gTrace->GetXaxis()->SetTitle("time [ns]");
+  gTrace->SetTitle(Form("Baseline mod:%d ch:%0d", modID, ch));
   
   fEcanvas->GetCanvas()->cd();
   gTrace->Draw("APL");
@@ -699,6 +731,7 @@ void * MainWindow::FillHistogram(void *ptr){
       for( unsigned int i = 0; i < nData; i++){
         ///printf("%3u| %2u, %3u, %7u, %llu \n", i, mods[i], channels[i], energies[i], timestamps[i]);
         hEnergy[mods[i]][channels[i]]->Fill(energies[i]);
+        hChannel[mods[i]]->Fill(channels[i]);
       }
       isEnergyHistFilled = true;
       pixie->SetFIFOisUsed(true);
