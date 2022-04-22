@@ -1,0 +1,20 @@
+# Metadata file for the pixie16_revf_general_16b250m_35921_2017-01-09 firmware package.
+# This file and its contents are covered by the XIA LLC Firmware License.
+product:
+  name: Pixie-16
+  revision: F
+  adc:
+    resolution: 16
+    sampling_frequency: 250
+release:
+  type: general
+  date: 2017-01-09
+  version: 35921
+files:
+  dsp:
+    "Pixie16DSP_revfgeneral_16b250m_r35921.ldr": a1d9ba059e98dd9dfb657450a889f13c
+    "Pixie16DSP_revfgeneral_16b250m_r35921.lst": dfd143988714d38cf2169dfd39c1b1ec
+    "Pixie16DSP_revfgeneral_16b250m_r35921.var": 34938d3a54ef71f8f575b8990fbd97bf
+  firmware:
+    "fippixie16_revfgeneral_16b250m_r36563.bin": d3588443fa201c9d5d1abaa8a576b846
+    "syspixie16_revfgeneral_adc250mhz_r33339.bin": 357f1a430b0c374582a2cfe5d564665d

@@ -27,6 +27,7 @@ enum MenuIdentifiers{
   M_CH_SETTINGS_SUMMARY,
   M_CH_SETTING,
   M_MODULE_SETTINGS,
+  M_PROGRAM_SETTINGS,
   M_FINDPEAKS,
   M_SHOW_CHANNELS_RATE
   
@@ -82,7 +83,9 @@ MainWindow::MainWindow(const TGWindow *p,UInt_t w,UInt_t h) {
   fMenuSettings->AddEntry("&Settings Summary", M_CH_SETTINGS_SUMMARY);
   fMenuSettings->AddEntry("&Channel Setting", M_CH_SETTING);
   fMenuSettings->AddSeparator();
-  fMenuSettings->AddEntry("Digitizer &Settings", M_MODULE_SETTINGS);
+  fMenuSettings->AddEntry("&Digitizer Settings", M_MODULE_SETTINGS);
+  fMenuSettings->AddSeparator();
+  fMenuSettings->AddEntry("Program Settings", M_PROGRAM_SETTINGS);
   fMenuSettings->Connect("Activated(Int_t)", "MainWindow", this, "HandleMenu(Int_t)");
   fMenuBar->AddPopup("&Settings", fMenuSettings, new TGLayoutHints(kLHintsTop | kLHintsLeft, 0, 4, 0, 0));
 
@@ -313,6 +316,11 @@ void MainWindow::HandleMenu(Int_t id){
         }
       }
       
+    }break;
+
+    ///========================= Program setting
+    case M_PROGRAM_SETTINGS:{
+      LogMsg("[Program settings] Not impelmented");
     }break;
     
     ///====================== Show channel rate;

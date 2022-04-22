@@ -1,0 +1,20 @@
+# Metadata file for the pixie16_revf_general_12b250m_r41847_2019-05-18 firmware package.
+# This file and its contents are covered by the XIA LLC Firmware License.
+product:
+  name: Pixie-16
+  revision: F
+  adc:
+    resolution: 12
+    sampling_frequency: 250
+release:
+  type: general
+  date: 2019-05-18
+  version: 41847
+files:
+  dsp:
+    "Pixie16DSP_revfgeneral_12b250m_r41847.ldr": e0aa3bd2968505aefdf86923fb05e4b6
+    "Pixie16DSP_revfgeneral_12b250m_r41847.lst": dfd143988714d38cf2169dfd39c1b1ec
+    "Pixie16DSP_revfgeneral_12b250m_r41847.var": 34938d3a54ef71f8f575b8990fbd97bf
+  firmware:
+    "fippixie16_revfgeneral_12b250m_r42081.bin": 66c666ade850d1fccc32f13065c95e5c
+    "syspixie16_revfgeneral_adc250mhz_r33339.bin": 357f1a430b0c374582a2cfe5d564665d
