@@ -1,6 +1,5 @@
 *.o
 *.log
-*.bin
 *.csv
 *.gch
 
@@ -13,5 +12,3 @@ read-set
 *.cxx
 *.pcm
 pixieDAQ
-
-script*
