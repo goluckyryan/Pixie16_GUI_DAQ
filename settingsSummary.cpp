@@ -66,13 +66,13 @@ SettingsSummary::SettingsSummary(const TGWindow *p, UInt_t w, UInt_t h, Pixie16 
 
   ///---------- label row
   TGHorizontalFrame * hframeLabel = new TGHorizontalFrame(hframeSettings, w, 50);
-  hframeSettings->AddFrame(hframeLabel, new TGLayoutHints(kLHintsExpandX, 2,2,2,2)); 
+  hframeSettings->AddFrame(hframeLabel, new TGLayoutHints(kLHintsExpandX, 2,2,0,0)); 
   TGLabel * labelItems[numItems];
   for(int i = 0; i < numItems; i++){
     labelItems[i] = new TGLabel(hframeLabel, Form("%s", labelText[i].Data()));
     labelItems[i]->Resize(width[i], 20);
     labelItems[i]->SetMargins(0, (i == 0 ? 0 : 10) , 0, 0);
-    hframeLabel->AddFrame(labelItems[i], new TGLayoutHints(kLHintsCenterX | kLHintsCenterY, 5, 5, 3, 4));
+    hframeLabel->AddFrame(labelItems[i], new TGLayoutHints(kLHintsCenterX | kLHintsCenterY, 5, 5, 2, 2));
   }
 
 
@@ -81,13 +81,13 @@ SettingsSummary::SettingsSummary(const TGWindow *p, UInt_t w, UInt_t h, Pixie16 
 
     //printf("-----------------------%d\n", i);
     hframeCh[i] = new TGHorizontalFrame(hframeSettings, w, 600 );
-    hframeSettings->AddFrame(hframeCh[i], new TGLayoutHints(kLHintsCenterX, 2,2,2,2));
+    hframeSettings->AddFrame(hframeCh[i], new TGLayoutHints(kLHintsCenterX, 2,2,0,0));
     
     int col = 0;
     lbCh[i] = new TGLabel(hframeCh[i] , Form("%02d", i));
     lbCh[i]->SetWidth(width[col]);
     lbCh[i]->SetTextColor(red);
-    hframeCh[i]->AddFrame(lbCh[i], new TGLayoutHints(kLHintsCenterX | kLHintsCenterY, 5, 5, 3, 4));
+    hframeCh[i]->AddFrame(lbCh[i], new TGLayoutHints(kLHintsCenterX | kLHintsCenterY, 5, 5, 2, 2));
     
     col++;
     cbOnOff[i] = new TGComboBox(hframeCh[i], i);
@@ -102,7 +102,7 @@ SettingsSummary::SettingsSummary(const TGWindow *p, UInt_t w, UInt_t h, Pixie16 
        lbCh[i]->SetTextColor(black);
     }
     cbOnOff[i]->Connect("Selected(Int_t, Int_t)", "SettingsSummary", this, Form("ChangeOnOff(=%d)", i));  
-    hframeCh[i]->AddFrame(cbOnOff[i], new TGLayoutHints(kLHintsCenterX | kLHintsCenterY, 5, 5, 3, 4));
+    hframeCh[i]->AddFrame(cbOnOff[i], new TGLayoutHints(kLHintsCenterX | kLHintsCenterY, 5, 5, 2, 2));
 
     col++;
     cbGain[i] = new TGComboBox(hframeCh[i], i);
@@ -111,7 +111,7 @@ SettingsSummary::SettingsSummary(const TGWindow *p, UInt_t w, UInt_t h, Pixie16 
     cbGain[i]->Resize(width[col], 20);
     pixie->GetChannelGain(modID, i) ? cbGain[i]->Select(1) : cbGain[i]->Select(0);
     cbGain[i]->Connect("Selected(Int_t, Int_t)", "SettingsSummary", this, Form("ChangeGain(=%d)", i));  
-    hframeCh[i]->AddFrame(cbGain[i], new TGLayoutHints(kLHintsCenterX | kLHintsCenterY, 5, 5, 3, 4));
+    hframeCh[i]->AddFrame(cbGain[i], new TGLayoutHints(kLHintsCenterX | kLHintsCenterY, 5, 5, 2, 2));
 
     col++;
     neTrigL[i] = new TGNumberEntry(hframeCh[i], pixie->GetChannelTriggerRiseTime(modID, i), 0, 0, TGNumberFormat::kNESRealTwo, TGNumberFormat::kNEANonNegative);
@@ -141,7 +141,7 @@ SettingsSummary::SettingsSummary(const TGWindow *p, UInt_t w, UInt_t h, Pixie16 
     cbPol[i]->Resize(width[col], 20);
     pixie->GetChannelPolarity(modID, i) ? cbPol[i]->Select(1) : cbPol[i]->Select(0);
     cbPol[i]->Connect("Selected(Int_t, Int_t)", "SettingsSummary", this, Form("ChangePol(=%d)", i));  
-    hframeCh[i]->AddFrame(cbPol[i], new TGLayoutHints(kLHintsCenterX | kLHintsCenterY, 5, 5, 3, 4));
+    hframeCh[i]->AddFrame(cbPol[i], new TGLayoutHints(kLHintsCenterX | kLHintsCenterY, 5, 5, 2, 2));
     
     col++;
     neEngL[i] = new TGNumberEntry(hframeCh[i], pixie->GetChannelEnergyRiseTime(modID, i), 0, 0, TGNumberFormat::kNESRealOne, TGNumberFormat::kNEANonNegative);
@@ -171,7 +171,7 @@ SettingsSummary::SettingsSummary(const TGWindow *p, UInt_t w, UInt_t h, Pixie16 
     cbTraceOnOff[i]->Resize(width[col], 20);    
     pixie->GetChannelTraceOnOff(modID, i) ? cbTraceOnOff[i]->Select(1) : cbTraceOnOff[i]->Select(0);
     cbTraceOnOff[i]->Connect("Selected(Int_t, Int_t)", "SettingsSummary", this, Form("ChangeTraceOnOff(=%d)", i));  
-    hframeCh[i]->AddFrame(cbTraceOnOff[i], new TGLayoutHints(kLHintsCenterX | kLHintsCenterY, 5, 5, 3, 4));
+    hframeCh[i]->AddFrame(cbTraceOnOff[i], new TGLayoutHints(kLHintsCenterX | kLHintsCenterY, 5, 5, 2, 2));
     
     col++;
     neTraceLength[i] = new TGNumberEntry(hframeCh[i], pixie->GetChannelTraceLength(modID, i), 0, 0, TGNumberFormat::kNESRealTwo, TGNumberFormat::kNEANonNegative);
@@ -269,7 +269,7 @@ void SettingsSummary::ChangePol(unsigned short ch){
 
 void SettingsSummary::ChangeTraceOnOff(unsigned short ch){
   short modID = modIDEntry->GetNumber();
-  int val = cbPol[ch]->GetSelected();
+  int val = cbTraceOnOff[ch]->GetSelected();
   pixie->SetChannelTraceOnOff(val, modID, ch);
   teFileName->SetText(settingFileName + "  (not saved)");
 }

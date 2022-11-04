@@ -125,6 +125,7 @@ public:
   int GetADCTraceLength()          {return 8192;}
   unsigned short * GetADCTrace()   {return ADCTrace;}
   ///========================= Setting
+  unsigned short * GetSlotMap() {return PXISlotMap;};
 
   unsigned int GetNumModule() {return NumModules;}
   unsigned int GetDigitizerSerialNumber(unsigned short modID) { return ModSerNum[modID];} 
@@ -210,7 +211,7 @@ public:
   unsigned int GetNextWord()      {return nextWord;}
   DataBlock *  GetData()          {return data;}
 
-  int ProcessSingleData();
+  int ProcessSingleData(short ch = -1);
   unsigned int ScanNumDataBlockInExtFIFO(); /// also fill the FIFOEnergies, FIFOChannels, FIFOTimestamps, output FIFONumDataBlock
   unsigned int          GetAccumulatedFIFONumDataBlock()  {return AccumulatedFIFONumDataBlock;}
   unsigned int          GetFIFONumDataBlock()  {return FIFONumDataBlock;}

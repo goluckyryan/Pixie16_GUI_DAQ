@@ -117,6 +117,7 @@ MainWindow::MainWindow(const TGWindow *p,UInt_t w,UInt_t h) {
   modIDEntry->SetLimits(TGNumberFormat::kNELLimitMinMax, 0, pixie->GetNumModule()-1);
   modIDEntry->Connect("Modified()", "MainWindow", this, "ChangeMod()"); 
   if( pixie->GetNumModule() == 1 ) modIDEntry->SetState(false);
+  
   hframe1->AddFrame(modIDEntry, uniLayoutHints);
   
   TGLabel * lb2 = new TGLabel(hframe1, "Ch :");
@@ -154,11 +155,11 @@ MainWindow::MainWindow(const TGWindow *p,UInt_t w,UInt_t h) {
   group2->AddFrame(hframe2);
   
   TGLabel * lb1Prefix = new TGLabel(hframe2, "Save Prefix:");
-  hframe2->AddFrame(lb1Prefix, uniLayoutHints);
+  hframe2->AddFrame(lb1Prefix, new TGLayoutHints(kLHintsNormal, 5,5,10,3));
   
   tePath = new TGTextEntry(hframe2, new TGTextBuffer(30));
   tePath->SetWidth(50);
-  tePath->SetText("haha");
+  tePath->SetText("testRun");
   hframe2->AddFrame(tePath, uniLayoutHints);
   
   runIDEntry = new TGNumberEntry(hframe2, 0, 0, 0, TGNumberFormat::kNESInteger, TGNumberFormat::kNEANonNegative);
@@ -198,14 +199,14 @@ MainWindow::MainWindow(const TGWindow *p,UInt_t w,UInt_t h) {
 
   ///================= Log massage
   TGGroupFrame * groupLog = new TGGroupFrame(fMain, "Log Message", kHorizontalFrame);
-  fMain->AddFrame(groupLog, new  TGLayoutHints(kLHintsCenterX, 5,5,0,5) );
+  fMain->AddFrame(groupLog, new  TGLayoutHints(kLHintsCenterX | kLHintsExpandX, 5,5,0,5) );
   
   teLog = new TGTextEdit(groupLog, w, 100);
   groupLog->AddFrame(teLog,  new TGLayoutHints(kLHintsNormal, 0,0,10,0));
 
 
   /// Set a name to the main frame
-  fMain->SetWindowName("Pixie16 DAQ");
+  fMain->SetWindowName("Pixie16 DAQ (beta)");
 
   /// Map all subwindows of main frame
   fMain->MapSubwindows();
@@ -401,14 +402,15 @@ void MainWindow::GetBaseLine(){
 void MainWindow::Scope(){
   
   int modID = modIDEntry->GetNumber();
+  unsigned short slotID = (pixie->GetSlotMap())[modID];
   int ch = chEntry->GetNumber();
   
-  if( pixie->GetChannelOnOff(modID, ch) == false ){
+  if( pixie->GetChannelOnOff(modID, ch) == false || pixie->GetChannelTraceOnOff(modID, ch) == false ){
     LogMsg(Form("mod:%d, ch-%d is disabled\n", modID, ch));
     return;
-  } 
+  }
   
-  LogMsg(Form("Get trace for mod:%d, ch-%02d", modID, ch));
+  LogMsg(Form("Get trace for mod:%d (slot:%d), ch-%02d", modID, slotID, ch));
   
   double dt = pixie->GetCh2ns(modID);
   
@@ -422,6 +424,7 @@ void MainWindow::Scope(){
   usleep(runDuration*1000);
   pixie->ReadData(0);
   pixie->StopRun();
+  pixie->PrintStatistics(modID);
   
   delete gTrace;
   gTrace = new TGraph();
@@ -429,15 +432,15 @@ void MainWindow::Scope(){
   ///printf("              next word : %u\n", pixie->GetNextWord());
   ///printf("number of word received : %u\n", pixie->GetnFIFOWords());
 
-  while( pixie->ProcessSingleData() <= 1 ){ /// full set of dataBlack
+  while( pixie->ProcessSingleData() < 1 ){ /// full set of dataBlack
     
     if( pixie->GetNextWord() >= pixie->GetnFIFOWords() ) break;
     if( data->slot < 2 ) break;
-    if(  data->eventID >= pixie->GetnFIFOWords() ) break;
+    if( data->eventID >= pixie->GetnFIFOWords() ) break;
     
-    ///printf("mod:%d, ch:%d, event:%llu, %u, %u\n", data->slot-2, data->ch, data->eventID, pixie->GetNextWord(), pixie->GetnFIFOWords() );
+    //printf("mod:%d, ch:%d, event:%llu, %u, %u\n", data->slot-2,data->ch, data->eventID, pixie->GetNextWord(), pixie->GetnFIFOWords() );
       
-    if( data->ch == ch && data->slot == modID + 2 ){
+    if( data->ch == ch && data->slot == slotID ){
 
       for( int i = 0 ; i < data->trace_length; i++){
         gTrace->SetPoint(i, i*dt, (data->trace)[i]);
@@ -567,7 +570,7 @@ void MainWindow::StartRun(){
   
   pixie->StartRun(1);
   if( pixie->IsRunning() ) saveDataThread->Run(); /// call SaveData()
-  if( pixie->IsRunning() ) fillHistThread->Run(); /// call SaveData()
+  //if( pixie->IsRunning() ) fillHistThread->Run(); /// call SaveData()
   
   bStartRun->SetEnabled(false);
   bStopRun->SetEnabled(true);
@@ -663,7 +666,7 @@ void * MainWindow::SaveData(void* ptr){
     if( pixie->GetnFIFOWords() > 0 ) {
       pixie->SaveData();
       ///ScanNumDataBlockInExtFIFO() should be here after ReadData(). becasue not a whlole dataBlock is in FIFO.
-      pixie->ScanNumDataBlockInExtFIFO();  //TODO need to check the time comsumtion
+      //pixie->ScanNumDataBlockInExtFIFO();  //TODO need to check the time comsumtion
       pixie->SetFIFOisUsed(false);
     
       localClock.Stop("timer");

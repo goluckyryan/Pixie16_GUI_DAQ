@@ -274,7 +274,7 @@ void Pixie16::CheckHardware(){
   //check pci is OK
   ans = exec("lspci -vv| grep \"Unknown header type\" | wc -l");
   if( atoi(ans.c_str()) > 0 ){
-   printf("found PLX PCI 9054, but not working. Unknown header Type.\n");
+   printf("Found PLX PCI 9054, but not working. Unknown header Type.\n");
    retval = -3;
    return; 
   }
@@ -463,7 +463,7 @@ unsigned int Pixie16::ScanNumDataBlockInExtFIFO(){
   return FIFONumDataBlock;
 }
 
-int Pixie16::ProcessSingleData(){
+int Pixie16::ProcessSingleData(short ch){
   
   int breakProcessLoopFlag = 0;
   
@@ -502,7 +502,7 @@ int Pixie16::ProcessSingleData(){
     
     if( nextWord == nFIFOWords ) {nextWord = 0; breakProcessLoopFlag = 1;}
     if( nextWord > nFIFOWords ) {nextWord = nextWord - nFIFOWords; breakProcessLoopFlag = 2;}
-
+    if( data->ch == ch ) breakProcessLoopFlag = 1;
   }
   
   return breakProcessLoopFlag ; 
@@ -734,31 +734,39 @@ void Pixie16::SetCSRABit(int bitwise, unsigned short val, unsigned short modID, 
   retval = Pixie16ReadSglChanPar( (char *)"CHANNEL_CSRA", &ParData, modID, ch);
   if( CheckError("Pixie16ReadSglChanPar::CHANNEL_CSRA") < 0 ) return;
   
+  std::cout << std::bitset<32>(ParData) << std::endl;     
+  std::cout << std::bitset<32>(~bitwise) << std::endl;     
+  
   int temp = ((int)ParData) & ~bitwise ;
   int haha = 0;
-  if( bitwise == CSRA_BIT::FAST_TRIGGER           ) haha = val <<  0;
-  if( bitwise == CSRA_BIT::M_VALIDATION           ) haha = val <<  1;
-  if( bitwise == CSRA_BIT::ENABLE_CHANNEL         ) haha = val <<  2;
-  if( bitwise == CSRA_BIT::C_VALIFATION           ) haha = val <<  3;
-  if( bitwise == CSRA_BIT::BLOCK_DAQ_DPM_FULL     ) haha = val <<  4;
-  if( bitwise == CSRA_BIT::POLARITY               ) haha = val <<  5;
-  if( bitwise == CSRA_BIT::VETO_TRIGGER           ) haha = val <<  6;
-  if( bitwise == CSRA_BIT::HIST_ENERGY            ) haha = val <<  7;
-  if( bitwise == CSRA_BIT::ENABLE_TRACE           ) haha = val <<  8;
-  if( bitwise == CSRA_BIT::ENABLE_QDC             ) haha = val <<  9;
-  if( bitwise == CSRA_BIT::ENABLE_CFD             ) haha = val << 10;
-  if( bitwise == CSRA_BIT::REQ_M_VALIDATION       ) haha = val << 11;
-  if( bitwise == CSRA_BIT::CAPTURE_ESUMS_BASELINE ) haha = val << 12;
-  if( bitwise == CSRA_BIT::REQ_C_VALIDATION       ) haha = val << 13;
-  if( bitwise == CSRA_BIT::INPUT_RELAY            ) haha = val << 14;
-  if( bitwise == CSRA_BIT::PILEUP                 ) haha = val << 15;
-  if( bitwise == CSRA_BIT::NO_TRACE_LARGE_PULSE   ) haha = val << 17;
-  if( bitwise == CSRA_BIT::GROUP_TRIGGER          ) haha = val << 18;
-  if( bitwise == CSRA_BIT::CH_VETO                ) haha = val << 19;
-  if( bitwise == CSRA_BIT::MO_VETO                ) haha = val << 20;
-  if( bitwise == CSRA_BIT::EXT_TIMESTAMP          ) haha = val << 21;
+  if( bitwise == CSRA_BIT::FAST_TRIGGER           ) haha = ((val & 0x1) <<  0);
+  if( bitwise == CSRA_BIT::M_VALIDATION           ) haha = ((val & 0x1) <<  1);
+  if( bitwise == CSRA_BIT::ENABLE_CHANNEL         ) haha = ((val & 0x1) <<  2);
+  if( bitwise == CSRA_BIT::C_VALIFATION           ) haha = ((val & 0x1) <<  3);
+  if( bitwise == CSRA_BIT::BLOCK_DAQ_DPM_FULL     ) haha = ((val & 0x1) <<  4);
+  if( bitwise == CSRA_BIT::POLARITY               ) haha = ((val & 0x1) <<  5);
+  if( bitwise == CSRA_BIT::VETO_TRIGGER           ) haha = ((val & 0x1) <<  6);
+  if( bitwise == CSRA_BIT::HIST_ENERGY            ) haha = ((val & 0x1) <<  7);
+  if( bitwise == CSRA_BIT::ENABLE_TRACE           ) haha = ((val & 0x1) <<  8);
+  if( bitwise == CSRA_BIT::ENABLE_QDC             ) haha = ((val & 0x1) <<  9);
+  if( bitwise == CSRA_BIT::ENABLE_CFD             ) haha = ((val & 0x1) << 10);
+  if( bitwise == CSRA_BIT::REQ_M_VALIDATION       ) haha = ((val & 0x1) << 11);
+  if( bitwise == CSRA_BIT::CAPTURE_ESUMS_BASELINE ) haha = ((val & 0x1) << 12);
+  if( bitwise == CSRA_BIT::REQ_C_VALIDATION       ) haha = ((val & 0x1) << 13);
+  if( bitwise == CSRA_BIT::INPUT_RELAY            ) haha = ((val & 0x1) << 14);
+  if( bitwise == CSRA_BIT::PILEUP                 ) haha = ((val & 0x1) << 15);
+  if( bitwise == CSRA_BIT::NO_TRACE_LARGE_PULSE   ) haha = ((val & 0x1) << 17);
+  if( bitwise == CSRA_BIT::GROUP_TRIGGER          ) haha = ((val & 0x1) << 18);
+  if( bitwise == CSRA_BIT::CH_VETO                ) haha = ((val & 0x1) << 19);
+  if( bitwise == CSRA_BIT::MO_VETO                ) haha = ((val & 0x1) << 20);
+  if( bitwise == CSRA_BIT::EXT_TIMESTAMP          ) haha = ((val & 0x1) << 21);
   
-  SetChannelSetting("CHANNEL_CSRA", (temp | haha), modID, ch);
+  std::cout << std::bitset<32>(temp) << std::endl;     
+  std::cout << std::bitset<32>(haha) << std::endl;     
+  
+  std::cout << std::bitset<32>(temp | haha) << std::endl;       
+  
+  SetChannelSetting("CHANNEL_CSRA", (temp | haha), modID, ch, true);
   
 }
 
