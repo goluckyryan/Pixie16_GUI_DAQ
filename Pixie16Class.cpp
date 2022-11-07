@@ -502,7 +502,7 @@ int Pixie16::ProcessSingleData(short ch){
     
     if( nextWord == nFIFOWords ) {nextWord = 0; breakProcessLoopFlag = 1;}
     if( nextWord > nFIFOWords ) {nextWord = nextWord - nFIFOWords; breakProcessLoopFlag = 2;}
-    if( data->ch == ch ) breakProcessLoopFlag = 1;
+    if( data->ch == ch ) {nextWord = 0; breakProcessLoopFlag = 3;}
   }
   
   return breakProcessLoopFlag ; 

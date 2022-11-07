@@ -12,3 +12,5 @@ read-set
 *.cxx
 *.pcm
 pixieDAQ
+
+data

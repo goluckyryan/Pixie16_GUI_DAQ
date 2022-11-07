@@ -20,6 +20,7 @@ SettingsSummary::SettingsSummary(const TGWindow *p, UInt_t w, UInt_t h, Pixie16 
   fMain = new TGMainFrame(p,w,h);
   fMain->SetWindowName("Pixie16 Settings Summary");
   fMain->Connect("CloseWindow()", "SettingsSummary", this, "CloseWindow()");
+  fMain->SetMWMHints(1,4, 0);
   
   gClient->GetColorByName("red", red);
   gClient->GetColorByName("black", black);

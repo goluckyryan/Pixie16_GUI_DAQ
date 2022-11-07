@@ -29,7 +29,7 @@ APIBASE = /usr/opt/xia/PixieSDK/lib/
 LIBS = $(APIBASE)libPixie16Api.so $(APIBASE)libPixieSDK.a $(PLXBASE)PlxApi.a
 
 
-OBJS = pixieDAQ.o Pixie16Class.o settingsSummary.o scalarPanel.o moduleSetting.o channelSetting.o
+OBJS = startStopDialog.o pixieDAQ.o Pixie16Class.o settingsSummary.o scalarPanel.o moduleSetting.o channelSetting.o
 
 
 all: testing/test testing/example  pixieDAQ
@@ -67,6 +67,10 @@ moduleSetting.o : moduleSetting.cpp moduleSetting.h global_macro.h
 channelSetting.o : channelSetting.cpp channelSetting.h global_macro.h
 	@echo "--------- creating channelSetting.o"
 	$(CC) $(CFLAGS) $(PIXIE_LIB_PATH) channelSetting.cpp $(ROOT_FLAG)
+
+startStopDialog.o : startStopDialog.cpp startStopDialog.h
+	@echo "--------- creating startStopDialog.o"
+	$(CC) $(CFLAGS) $(PIXIE_LIB_PATH) startStopDialog.cpp $(ROOT_FLAG)
 
 
 

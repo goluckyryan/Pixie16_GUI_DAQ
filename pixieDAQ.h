@@ -18,6 +18,7 @@
 #include "scalarPanel.h"
 #include "moduleSetting.h"
 #include "channelSetting.h"
+#include "startStopDialog.h"
 
 class TGWindow;
 class TGMainFrame;
@@ -51,6 +52,7 @@ private:
    ModuleSetting * moduleSetting;
    ChannelSetting * channelSetting;
    ScalarPanel * scalarPanel;
+   StartStopDialog * startStopDialog;
    
    TThread * saveDataThread;
    TThread * fillHistThread;

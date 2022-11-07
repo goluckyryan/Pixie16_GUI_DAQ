@@ -159,7 +159,7 @@ MainWindow::MainWindow(const TGWindow *p,UInt_t w,UInt_t h) {
   
   tePath = new TGTextEntry(hframe2, new TGTextBuffer(30));
   tePath->SetWidth(50);
-  tePath->SetText("testRun");
+  tePath->SetText("data/testRun");
   hframe2->AddFrame(tePath, uniLayoutHints);
   
   runIDEntry = new TGNumberEntry(hframe2, 0, 0, 0, TGNumberFormat::kNESInteger, TGNumberFormat::kNEANonNegative);
@@ -258,6 +258,7 @@ MainWindow::~MainWindow() {
   delete moduleSetting;
   delete channelSetting;
   delete scalarPanel;
+  delete startStopDialog;
   
   delete saveDataThread;
   delete fillHistThread;
@@ -432,7 +433,7 @@ void MainWindow::Scope(){
   ///printf("              next word : %u\n", pixie->GetNextWord());
   ///printf("number of word received : %u\n", pixie->GetnFIFOWords());
 
-  while( pixie->ProcessSingleData() < 1 ){ /// full set of dataBlack
+  while( pixie->ProcessSingleData() <= 1 ){ /// full set of dataBlack
     
     if( pixie->GetNextWord() >= pixie->GetnFIFOWords() ) break;
     if( data->slot < 2 ) break;
@@ -554,54 +555,74 @@ void MainWindow::GoodBye(){
 
 void MainWindow::StartRun(){
   
-  TString saveFileName = Form("%s_%03lu.evt", tePath->GetText(), runIDEntry->GetIntNumber());
+  startStopDialog = new StartStopDialog(gClient->GetRoot(), fMain, 400, 200, true);
   
-  pixie->OpenFile(saveFileName.Data(), false);
-  
-  LogMsg(Form("Start Run. Save data at %s.\n", saveFileName.Data()));
-  
-  ///clear histogram;
-  isEnergyHistFilled = false;
-  for( unsigned int iMod = 0 ; iMod < pixie->GetNumModule(); iMod++){
-    for( int j = 0; j < MAXCH ; j++){
-      hEnergy[iMod][j]->Reset();
+  if( StartStopDialog::isOK){
+    
+    TString saveFileName = Form("%s_%03lu.evt", tePath->GetText(), runIDEntry->GetIntNumber());
+    
+    pixie->OpenFile(saveFileName.Data(), false);
+    
+    LogMsg(Form("Start Run. Save data at %s.\n", saveFileName.Data()));
+    
+    ///clear histogram;
+    isEnergyHistFilled = false;
+    for( unsigned int iMod = 0 ; iMod < pixie->GetNumModule(); iMod++){
+      for( int j = 0; j < MAXCH ; j++){
+        hEnergy[iMod][j]->Reset();
+      }
     }
+    
+    TString cmd = Form("/home/tandem/PixieDAQ/elogEntry.sh %d %d \"%s\"", 1, (int) runIDEntry->GetIntNumber(), StartStopDialog::Comment.Data() );
+    int temp = system(cmd.Data());
+    
+    pixie->StartRun(1);
+    if( pixie->IsRunning() ) saveDataThread->Run(); /// call SaveData()
+    //if( pixie->IsRunning() ) fillHistThread->Run(); /// call SaveData()
+    
+    bStartRun->SetEnabled(false);
+    bStopRun->SetEnabled(true);    
+    bFitTrace->SetEnabled(false);
   }
   
-  pixie->StartRun(1);
-  if( pixie->IsRunning() ) saveDataThread->Run(); /// call SaveData()
-  //if( pixie->IsRunning() ) fillHistThread->Run(); /// call SaveData()
-  
-  bStartRun->SetEnabled(false);
-  bStopRun->SetEnabled(true);
 }
 
 
 void MainWindow::StopRun(){
   
-  pixie->StopRun();
-  pixie->ReadData(0);
-  pixie->SaveData();
+  startStopDialog = new StartStopDialog(gClient->GetRoot(), fMain, 400, 200, true);
   
-  LogMsg("Stop Run");
-  LogMsg(Form("File Size : %.2f MB", pixie->GetFileSize()/1024./1024.));
-  pixie->CloseFile();
+  if( StartStopDialog::isOK){
+    
+    pixie->StopRun();
+    saveDataThread->Join();
+    usleep(200*1000);
+    pixie->ReadData(0);
+    pixie->SaveData();
+    
+    LogMsg("Stop Run");
+    LogMsg(Form("File Size : %.2f MB", pixie->GetFileSize()/1024./1024.));
+    pixie->CloseFile();
 
-  pixie->PrintStatistics(0);
-  bStartRun->SetEnabled(true);
-  bStopRun->SetEnabled(false);
-  
-  runIDEntry->SetIntNumber(runIDEntry->GetIntNumber()+1);
-
+    pixie->PrintStatistics(0);
+    bStartRun->SetEnabled(true);
+    bStopRun->SetEnabled(false);
+    bFitTrace->SetEnabled(true);
+    
+    TString cmd = Form("/home/tandem/PixieDAQ/elogEntry.sh %d %d \"%s\"", 0, (int)runIDEntry->GetIntNumber(), StartStopDialog::Comment.Data() );
+    int temp = system(cmd.Data());
+    
+    runIDEntry->SetIntNumber(runIDEntry->GetIntNumber()+1);
+  }
 }
 
 
 void MainWindow::OpenScalar(){
   
   if( scalarPanel == NULL ) {
-    scalarPanel = new ScalarPanel(gClient->GetRoot(), 600, 600, pixie);
+    scalarPanel = new ScalarPanel(gClient->GetRoot(), fMain, 600, 600, pixie);
   }else{
-    if( !scalarPanel->isOpened ) scalarPanel = new ScalarPanel(gClient->GetRoot(), 600, 600, pixie);
+    if( !scalarPanel->isOpened ) scalarPanel = new ScalarPanel(gClient->GetRoot(), fMain, 600, 600, pixie);
   }
 }
 
@@ -666,7 +687,7 @@ void * MainWindow::SaveData(void* ptr){
     if( pixie->GetnFIFOWords() > 0 ) {
       pixie->SaveData();
       ///ScanNumDataBlockInExtFIFO() should be here after ReadData(). becasue not a whlole dataBlock is in FIFO.
-      //pixie->ScanNumDataBlockInExtFIFO();  //TODO need to check the time comsumtion
+      pixie->ScanNumDataBlockInExtFIFO();  //TODO need to check the time comsumtion
       pixie->SetFIFOisUsed(false);
     
       localClock.Stop("timer");
@@ -702,7 +723,6 @@ void * MainWindow::SaveData(void* ptr){
       }
     }
   }
-  
   pixie->ReadData(0);
   pixie->SaveData();
   

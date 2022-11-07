@@ -20,15 +20,16 @@ TGTextEntry  * ScalarPanel::teRealTime[MAXMOD] = {NULL};
 
 int updateTime = 500; // msec
 
-ScalarPanel::ScalarPanel(const TGWindow *p, UInt_t w, UInt_t h, Pixie16 * pixie){
+ScalarPanel::ScalarPanel(const TGWindow *p, const TGWindow *main, UInt_t w, UInt_t h, Pixie16 * pixie){
   
   this->pixie = pixie; 
   
   nMod = pixie->GetNumModule();
   
-  fMain = new TGMainFrame(p,w,h);
+  fMain = new TGTransientFrame(p,main,w,h);
   fMain->SetWindowName("Pixie16 Scalar Panel");
   fMain->Connect("CloseWindow()", "ScalarPanel", this, "CloseWindow()");
+  fMain->SetMWMHints(1,4, 0);
 
   ///Module choose
   TGHorizontalFrame *hframe = new TGHorizontalFrame(fMain, w, 50 );
@@ -120,7 +121,7 @@ void * ScalarPanel::UpdateScalar(void * ptr){
       Pixie16ReadStatisticsFromModule (statistics, mod);
 
       double realTime = Pixie16ComputeRealTime (statistics, mod);      
-      teRealTime[mod]->SetText(Form("%.2f", realTime));
+      teRealTime[mod]->SetText(Form("%.0f", realTime));
        
       for( int ch = 0; ch < MAXCH ; ch ++){
         
@@ -128,7 +129,7 @@ void * ScalarPanel::UpdateScalar(void * ptr){
         double OCR = Pixie16ComputeOutputCountRate (statistics, mod, ch);
         double liveTime = Pixie16ComputeLiveTime (statistics, mod, ch);
         
-        teRate[mod][ch]->SetText(Form("%.2f[%.2f] %.2f", ICR, OCR, liveTime));
+        teRate[mod][ch]->SetText(Form("%.2f[%.2f] %.0f", ICR, OCR, liveTime));
       }
       gSystem->Sleep(updateTime); 
     }

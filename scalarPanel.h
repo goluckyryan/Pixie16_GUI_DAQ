@@ -15,7 +15,7 @@ class TGMainFrame;
 
 class ScalarPanel{
 private:
-  TGMainFrame * fMain;
+  TGTransientFrame * fMain;
   
   static int nMod;
   static Pixie16 * pixie;
@@ -28,7 +28,7 @@ private:
   TThread * thread;
 
 public:
-  ScalarPanel(const TGWindow *p, UInt_t w, UInt_t h, Pixie16 * pixie);
+  ScalarPanel(const TGWindow *p, const TGWindow *main, UInt_t w, UInt_t h, Pixie16 * pixie);
   virtual ~ScalarPanel();
 
   static void * UpdateScalar(void * ptr); 
