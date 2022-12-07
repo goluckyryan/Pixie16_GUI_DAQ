@@ -164,7 +164,7 @@ ChannelSetting::ChannelSetting(const TGWindow *p, UInt_t w, UInt_t h, Pixie16 * 
       cbQDCsumOnOff->Connect("Selected(Int_t, Int_t)", "ChannelSetting", this, "ChangeQDCsumOnOff()");  
       hframeQDCsumOnOff->AddFrame(cbQDCsumOnOff,  new TGLayoutHints(kLHintsRight, 5,5,3,4));
 
-      TGLabel * lbQDCsumOnOff = new TGLabel(hframeQDCsumOnOff, "Trace On/Off");
+      TGLabel * lbQDCsumOnOff = new TGLabel(hframeQDCsumOnOff, "QDC sum On/Off");
       hframeQDCsumOnOff->AddFrame(lbQDCsumOnOff, new TGLayoutHints(kLHintsRight | kLHintsCenterY, 5, 5, 3, 4));
     }
     

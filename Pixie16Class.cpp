@@ -611,9 +611,9 @@ double Pixie16::GetChannelSetting(std::string parName, unsigned short modID, uns
         printf("Block data acquisition if trace or header DPMs are full (bit:  4) : %s \n", CSRA & CSRA_BIT::BLOCK_DAQ_DPM_FULL ? "Yes" : "No");
         printf("                                        signal polarity (bit:  5) : %s \n", CSRA & CSRA_BIT::POLARITY ? "\033[1;33mPositive\033[m" : "\033[1;31mNegative\033[m");
         printf("                                   veto channel trigger (bit:  6) : %s \n", CSRA & CSRA_BIT::VETO_TRIGGER ? "enable" : "disable");
-        printf("                                   Enable trace capture (bit:  8) : %s \n", CSRA & CSRA_BIT::ENABLE_TRACE ? "enable" : "disable");
-        printf("                                 Enable QDC sum capture (bit:  9) : %s \n", CSRA & CSRA_BIT::ENABLE_QDC ? "enable" : "disable");
-        printf("                                Enable CFD trigger mode (bit: 10) : %s \n", CSRA & CSRA_BIT::ENABLE_CFD ? "enable" : "disable");
+        printf("                                   Enable trace capture (bit:  8) : %s \n", CSRA & CSRA_BIT::ENABLE_TRACE ? "\033[1;33menable\033[m" : "disable");
+        printf("                                 Enable QDC sum capture (bit:  9) : %s \n", CSRA & CSRA_BIT::ENABLE_QDC ? "\033[1;33menable\033[m" : "disable");
+        printf("                                Enable CFD trigger mode (bit: 10) : %s \n", CSRA & CSRA_BIT::ENABLE_CFD ? "\033[1;33menable\033[m" : "disable");
         printf("                     required module validation trigger (bit: 11) : %s \n", CSRA & CSRA_BIT::REQ_M_VALIDATION ? "required" : "not required");
         printf("           Enable capture raw energy sums and baselines (bit: 12) : %s \n", CSRA & CSRA_BIT::CAPTURE_ESUMS_BASELINE ? "enable" : "disable");
         printf("                    required cahnnel validation trigger (bit: 13) : %s \n", CSRA & CSRA_BIT::REQ_C_VALIDATION ? "required" : "not required");

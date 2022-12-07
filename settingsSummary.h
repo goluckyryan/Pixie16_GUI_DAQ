@@ -55,6 +55,8 @@ public:
 
   
   void CloseWindow() { printf("close SettingsSummary window\n"); delete this; }
+
+  void GetSettingsFromDigitizer();
   
   void ChangeOnOff(unsigned short ch);
   void ChangeGain(unsigned short ch);
