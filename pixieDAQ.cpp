@@ -425,6 +425,7 @@ void MainWindow::Scope(){
   usleep(runDuration*1000);
   pixie->ReadData(0);
   pixie->StopRun();
+
   pixie->PrintStatistics(modID);
   
   delete gTrace;
@@ -460,6 +461,7 @@ void MainWindow::Scope(){
       
     }
   }
+  
   
   ///printf("=============== finished \n");
   
@@ -573,8 +575,8 @@ void MainWindow::StartRun(){
       }
     }
     
-    TString cmd = Form("/home/tandem/PixieDAQ/elogEntry.sh %d %d \"%s\"", 1, (int) runIDEntry->GetIntNumber(), StartStopDialog::Comment.Data() );
-    int temp = system(cmd.Data());
+    //TString cmd = Form("/home/tandem/PixieDAQ/elogEntry.sh %d %d \"%s\"", 1, (int) runIDEntry->GetIntNumber(), StartStopDialog::Comment.Data() );
+    //int temp = system(cmd.Data());
     
     pixie->StartRun(1);
     if( pixie->IsRunning() ) saveDataThread->Run(); /// call SaveData()
@@ -609,8 +611,8 @@ void MainWindow::StopRun(){
     bStopRun->SetEnabled(false);
     bFitTrace->SetEnabled(true);
     
-    TString cmd = Form("/home/tandem/PixieDAQ/elogEntry.sh %d %d \"%s\"", 0, (int)runIDEntry->GetIntNumber(), StartStopDialog::Comment.Data() );
-    int temp = system(cmd.Data());
+    //TString cmd = Form("/home/tandem/PixieDAQ/elogEntry.sh %d %d \"%s\"", 0, (int)runIDEntry->GetIntNumber(), StartStopDialog::Comment.Data() );
+    //int temp = system(cmd.Data());
     
     runIDEntry->SetIntNumber(runIDEntry->GetIntNumber()+1);
   }
@@ -674,7 +676,7 @@ void * MainWindow::SaveData(void* ptr){
   localClock.Reset();
   localClock.Start("timer");
   
-  int pauseTime = 10 ; ///msec
+  int pauseTime = 1 ; ///msec
 
   while( pixie->IsRunning() ){
     
@@ -687,8 +689,8 @@ void * MainWindow::SaveData(void* ptr){
     if( pixie->GetnFIFOWords() > 0 ) {
       pixie->SaveData();
       ///ScanNumDataBlockInExtFIFO() should be here after ReadData(). becasue not a whlole dataBlock is in FIFO.
-      pixie->ScanNumDataBlockInExtFIFO();  //TODO need to check the time comsumtion
-      pixie->SetFIFOisUsed(false);
+      ///pixie->ScanNumDataBlockInExtFIFO();  //TODO need to check the time comsumtion
+      ///pixie->SetFIFOisUsed(false);
     
       localClock.Stop("timer");
       newTime = localClock.GetRealTime("timer"); /// sec

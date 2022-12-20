@@ -285,7 +285,6 @@ void Pixie16::CheckHardware(){
 
 void Pixie16::GetDigitizerInfo(unsigned short modID){
 
-
   //retval = Pixie16ReadModuleInfo(modID, &ModRev, &ModSerNum, &ModADCBits, &ModADCMSPS, &numChannels);
   retval = Pixie16ReadModuleInfo(modID, &ModRev[modID], &ModSerNum[modID], &ModADCBits[modID], &ModADCMSPS[modID], &numChannels[modID]);
   
@@ -317,6 +316,20 @@ void Pixie16::BootDigitizers(){
   printf("\033[32mBooting module ...\033[0m\n");
   for( int i = 0 ; i < NumModules; i++){
     
+
+    fifo_worker_config worker_config;
+    retval = PixieGetWorkerConfiguration(i, &worker_config);
+    if( CheckError("PixieGetWorkerConfiguration") < 0 ) return ;
+
+    printf("Getting FIFO worker information for modulus %d", i);
+    std::cout << "Bandwidth (MB/sec): " << worker_config.bandwidth_mb_per_sec << std::endl;
+    std::cout << "Buffers : " << worker_config.buffers << std::endl;
+    std::cout << "DMA Trigger Level (B): " << worker_config.dma_trigger_level_bytes << std::endl;
+    std::cout << "Hold (usec): " << worker_config.hold_usecs << std::endl;
+    std::cout << "Idle wait (usec): " << worker_config.idle_wait_usecs << std::endl;
+    std::cout << "Run wait (usec): " << worker_config.run_wait_usecs << std::endl;
+    std::cout << "End List-Mode FIFO worker information for Module " << i << std::endl;
+
     GetDigitizerInfo(i);
     
     retval = Pixie16BootModule (
@@ -386,6 +399,15 @@ void Pixie16::StartRun(bool listMode){
     totNumFIFOWords = 0;
     AccumulatedFIFONumDataBlock = 0;
     nextWord = 0;
+
+    int synch_wait = 0;
+    int in_synch = 0;
+
+    retval = Pixie16WriteSglModPar("SYNCH_WAIT", synch_wait, 0);
+    if( CheckError("Pixie16StartListModeRun") < 0 ) return;
+    retval = Pixie16WriteSglModPar("IN_SYNCH", in_synch, 0);
+    if( CheckError("Pixie16StartListModeRun") < 0 ) return;
+
     retval = Pixie16StartListModeRun(NumModules, LIST_MODE_RUN, mode);
     if( CheckError("Pixie16StartListModeRun") < 0 ) return;
     printf("\033[32m LIST_MODE run\033[0m\n");
@@ -438,27 +460,69 @@ void Pixie16::ReadData(unsigned short modID){
   }
 }
 
+void Pixie16::ClearFIFOData(){
+  FIFONumDataBlock = 0;
+  nextWord = 0;
+
+  delete FIFOEnergies;
+  delete FIFOChannels;  
+  delete FIFOMods;  
+  delete FIFOTimestamps;
+
+  FIFOEnergies   = new unsigned short[MAXFIFODATABLOCK];
+  FIFOChannels   = new unsigned short[MAXFIFODATABLOCK];
+  FIFOMods       = new unsigned short[MAXFIFODATABLOCK];
+  FIFOTimestamps = new unsigned long long[MAXFIFODATABLOCK];
+
+}
+
+void Pixie16::PrintExtFIFOWords() {
+  unsigned int nWords = (ExtFIFO_Data[nextWord] >> 17) & 0x3FFF;
+  printf("------------------- print dataBlock, nWords = %d\n", nWords);
+  int count = 0;
+  for( unsigned int i = nextWord; i < nextWord + nWords + 10 ; i++){
+    if( i == nextWord + nWords ) printf("===== end of dataBlock\n");
+    if( count % 4 == 3 ){
+      printf("%08X \n", ExtFIFO_Data[i]);
+    }else{
+      printf("%08X ", ExtFIFO_Data[i]);
+    }
+    count ++;
+  }
+  printf("\n------------------- \n");
+}
+
 unsigned int Pixie16::ScanNumDataBlockInExtFIFO(){
   
   unsigned int nextWordtemp = nextWord;
   
-  ///if( nextWordtemp < nFIFOWords )  printf("============= FIFOWord : %u \n", nFIFOWords);
+  //if( nextWordtemp < nFIFOWords ) {
+  //  printf("============= FIFOWord : %u \n", nFIFOWords);
+  //  PrintExtFIFOWords();
+  //}
   while( nextWordtemp < nFIFOWords ){
     
-    unsigned short eventLen = (ExtFIFO_Data[nextWordtemp] >> 17) & 0x3FFF;
+    uint32_t haha = ExtFIFO_Data[nextWordtemp];
+
+    unsigned short eventLen = (haha >> 17) & 0x3FFF;
     
+    FIFOChannels[FIFONumDataBlock]   = (haha & 0xF ); 
+    FIFOMods[FIFONumDataBlock]       = ((haha >> 4) & 0xF) - 2;
     FIFOEnergies[FIFONumDataBlock]   = (ExtFIFO_Data[nextWordtemp + 3] & 0xFFFF ); 
-    FIFOChannels[FIFONumDataBlock]   = (ExtFIFO_Data[nextWordtemp] & 0xF ); 
-    FIFOMods[FIFONumDataBlock]       = ((ExtFIFO_Data[nextWordtemp] >> 4) & 0xF) - 2;
     FIFOTimestamps[FIFONumDataBlock] = ((unsigned long long)(ExtFIFO_Data[nextWordtemp+2] & 0xFFFF) << 32) + ExtFIFO_Data[nextWordtemp+1];
 
-    nextWordtemp  += eventLen;
-    ///printf("%u | nextWordtemp %u, nextWord %u, ch %u, energy %u \n",  FIFONumDataBlock, nextWordtemp, nextWord, FIFOChannels[FIFONumDataBlock], FIFOEnergies[FIFONumDataBlock]);
+    nextWordtemp  += eventLen;    
+    //printf("%u | nextWordtemp %u, nextWord %u, eventLen: %u, ch %u, energy %u, time : %llu \n",  FIFONumDataBlock, nextWordtemp, nextWord, eventLen, 
+    //                                                                                              FIFOChannels[FIFONumDataBlock], 
+    //                                                                                              FIFOEnergies[FIFONumDataBlock],
+    //                                                                                              FIFOTimestamps[FIFONumDataBlock]);
     FIFONumDataBlock ++;
+    if (FIFONumDataBlock > MAXFIFODATABLOCK ) break;
   }
 
   nextWord = nextWordtemp - nFIFOWords ;
   AccumulatedFIFONumDataBlock += FIFONumDataBlock;
+  //printf("FIFONumDataBlock : %u, %u \n", FIFONumDataBlock, AccumulatedFIFONumDataBlock);
   
   return FIFONumDataBlock;
 }
@@ -784,6 +848,7 @@ void Pixie16::PrintStatistics(unsigned short modID){
   GetStatitics(modID);
   if( retval >= 0 ){
     double realTime = Pixie16ComputeRealTime (Statistics, modID);
+    printf("===================================== statistics based on digitizer.\n");
     printf(" Real (or RUN) Time : %9.3f sec \n", realTime);
     printf("  ch | live time (sec) | input count rate | output count rate | trigger | events \n");
     printf("-----+-----------------+------------------+-------------------+---------+--------\n");
@@ -829,6 +894,16 @@ double Pixie16::GetRealTime(unsigned short modID){
   retval = Pixie16ReadStatisticsFromModule (statistics, modID);
   if( CheckError("Pixie16ReadStatisticsFromModule") < 0 ) return -404;
   return Pixie16ComputeRealTime (statistics, modID);
+}
+
+
+void Pixie16::LoadSettings(std::string fileName){
+  retval = Pixie16LoadDSPParametersFromFile((char*) fileName.c_str());
+  if( CheckError("Pixie16SaveDSPParametersToFile") < 0 ) {
+    return;
+  }else{
+    printf("loaded setting from %s\n", fileName.c_str());
+  }
 }
 
 void Pixie16::SaveSettings(std::string fileName){

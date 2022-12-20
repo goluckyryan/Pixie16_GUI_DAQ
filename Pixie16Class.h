@@ -6,7 +6,7 @@
 #include "pixie16/pixie16.h"
 #include "DataBlock.h"
 
-#define MAXFIFODATABLOCK 1000  ///max FIFO Datablack for one read
+#define MAXFIFODATABLOCK 10000  ///max FIFO Datablack for one read
 
 enum CSRA_BIT{
   FAST_TRIGGER           = 0x00000001,
@@ -167,7 +167,6 @@ public:
   void PrintChannelAllSettings(unsigned short modID, unsigned short ch);
   void PrintChannelSettingsSummary(unsigned short modID);
  
-
   void SetChannelSetting(std::string parName, double val, unsigned short modID, unsigned short ch, bool verbose = false);
   void SetChannelTriggerRiseTime (double val, unsigned short modID, unsigned short ch){ SetChannelSetting("TRIGGER_RISETIME",  val, modID, ch, 1);}
   void SetChannelTriggerFlatTop  (double val, unsigned short modID, unsigned short ch){ SetChannelSetting("TRIGGER_FLATTOP",   val, modID, ch, 1);}
@@ -189,6 +188,8 @@ public:
   void SetChannelGain(bool high, unsigned short modID, unsigned short ch)                  { SetCSRABit(CSRA_BIT::INPUT_RELAY, high, modID, ch); }
   void SetChannelQDCsumOnOff(bool high, unsigned short modID, unsigned short ch)           { SetCSRABit(CSRA_BIT::ENABLE_QDC, high, modID, ch); }
   
+  ///========================== Setting file;
+  void LoadSettings(std::string fileName);
   void SaveSettings(std::string fileName);
   
   ///========================== RUN
@@ -204,7 +205,7 @@ public:
   void   PrintStatistics(unsigned short modID);
 
   void CheckExternalFIFOWords(unsigned short modID);
-  void ReadData(unsigned short modID);
+  void ReadData(unsigned short modID); // this will reset the FIFONumDataBlock;
   
   unsigned int GetTotalNumWords() {return totNumFIFOWords;}
   unsigned int GetnFIFOWords()    {return nFIFOWords;}
@@ -219,26 +220,13 @@ public:
   unsigned short *      GetFIFOChannels()      {return FIFOChannels;}
   unsigned short *      GetFIFOMods()          {return FIFOMods;}
   unsigned long long *  GetFIFOTimestamps()    {return FIFOTimestamps;}
-  
+  void                  ClearFIFOData();
+
   /// FIFOisUsed is not used in this Class, it is for sync in thread
   void SetFIFOisUsed(bool isUsed) {this->FIFOisUsed = isUsed;};
   bool GetFIFOisUsed()            {return FIFOisUsed;}
 
-  void PrintExtFIFOWords() {
-    unsigned int nWords = (ExtFIFO_Data[nextWord] >> 17) & 0x3FFF;
-    printf("------------------- print dataBlock, nWords = %d\n", nWords);
-    int count = 0;
-    for( unsigned int i = nextWord; i < nextWord + nWords + 10 ; i++){
-      if( i == nextWord + nWords ) printf("===== end of dataBlock\n");
-      if( count % 4 == 3 ){
-        printf("%08X \n", ExtFIFO_Data[i]);
-      }else{
-        printf("%08X ", ExtFIFO_Data[i]);
-      }
-      count ++;
-    }
-    printf("\n------------------- \n");
-  }
+  void PrintExtFIFOWords();
   
   void OpenFile(std::string fileName, bool append);
   void SaveData();

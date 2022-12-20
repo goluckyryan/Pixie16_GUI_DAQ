@@ -418,8 +418,6 @@ void SettingsSummary::OpenFile(){
 }
 
 void SettingsSummary::SaveSetting(){
-  printf("save button is pressed.\n");
   pixie->SaveSettings(settingFileName.Data());
-  
   teFileName->SetText(settingFileName + "  (saved)");
 }
