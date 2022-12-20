@@ -58,9 +58,10 @@ MainWindow::MainWindow(const TGWindow *p,UInt_t w,UInt_t h) {
   
   for( unsigned int i = 0; i < pixie->GetNumModule() ; i++){
     for( int j = 0; j < MAXCH ; j++){
-      hEnergy[i][j] = new TH1F(Form("hEnergy%02d_%02d", i, j), Form("Energy mod:%2d ch:%02d (down scaled)", i, j), 200, 0, 160000);
+      hEnergy[i][j] = new TH1F(Form("hEnergy%02d_%02d", i, j), Form("Energy mod:%2d ch:%02d", i, j), 200, 0, 30000);
+      hEnergy[i][j]->SetLineColor(i+1);
     }
-    hChannel[i] = new TH1F(Form("hChannel%02d", i), Form("Channel Stat. mod:%2d (down scaled)", i), MAXCH, 0, MAXCH);
+    hChannel[i] = new TH1F(Form("hChannel%02d", i), Form("Channel Stat. mod:%2d", i), MAXCH, 0, MAXCH);
   }
   
   /// Create a main frame
@@ -572,6 +573,7 @@ void MainWindow::StartRun(){
     for( unsigned int iMod = 0 ; iMod < pixie->GetNumModule(); iMod++){
       for( int j = 0; j < MAXCH ; j++){
         hEnergy[iMod][j]->Reset();
+        hEnergy[iMod][j]->SetLineColor(j+1);
       }
     }
     
@@ -688,9 +690,16 @@ void * MainWindow::SaveData(void* ptr){
     
     if( pixie->GetnFIFOWords() > 0 ) {
       pixie->SaveData();
-      ///ScanNumDataBlockInExtFIFO() should be here after ReadData(). becasue not a whlole dataBlock is in FIFO.
-      ///pixie->ScanNumDataBlockInExtFIFO();  //TODO need to check the time comsumtion
-      ///pixie->SetFIFOisUsed(false);
+
+      /// fill historgam 
+      unsigned int nData = pixie->ScanNumDataBlockInExtFIFO();  //TODO need to check the time comsumtion
+
+      unsigned short * energies =  pixie->GetFIFOEnergies();
+      unsigned short * channels =  pixie->GetFIFOChannels();
+      for( unsigned int h = 0; h < nData; h++) {
+        hChannel[0]->Fill(channels[h] );
+        hEnergy[0][channels[h]]->Fill( energies[h] );
+      }
     
       localClock.Stop("timer");
       newTime = localClock.GetRealTime("timer"); /// sec
@@ -699,8 +708,6 @@ void * MainWindow::SaveData(void* ptr){
       ///printf("Thread[SaveData] , FIFO: %u  nData %u | %f\n", pixie->GetnFIFOWords(),  nData, newTime);
       
       if( newTime - oldTime > 1 ) {
-        ///double MByteRead = pixie->GetnFIFOWords()*4./1024./1024.;
-        ///if( MByteRead > 70 && pauseTime > 10) pauseTime = pauseTime - 20;
       
         time_t now = time(0);
         tm * ltm = localtime(&now);
@@ -717,11 +724,23 @@ void * MainWindow::SaveData(void* ptr){
         oldFileSize = newFileSize;
         oldTime = newTime;
 
-        ///teLog->AddLine(Form("[%4d-%02d-%02d %02d:%02d:%02d] File Size : %.2f MB [%.2f MB/s], %.2f MB readed", 
-        ///                     year, month, day, hour, minute, secound, newFileSize, rate, MByteRead));
         teLog->AddLine(Form("[%4d-%02d-%02d %02d:%02d:%02d] File Size : %.2f MB [%.2f MB/s] Number of events recorded : %u", 
                              year, month, day, hour, minute, secound, newFileSize, rate, pixie->GetAccumulatedFIFONumDataBlock()));
         teLog->LineDown();
+
+        fEcanvas->GetCanvas()->cd();
+        int yMax = 0;
+        int maxID ;
+        for( int i = 0; i < 16; i++) {
+          if( hEnergy[0][i]->GetEntries() > yMax ) {yMax = hEnergy[0][i]->GetEntries(); maxID = i;}
+        }
+        //hEnergy[0][maxID]->SetMaximum(yMax * 1.2);
+        for( int i = 0; i < 16; i++) {
+          hEnergy[0][(i+maxID)%16]->Draw("same");
+        }
+        fEcanvas->GetCanvas()->Modified();  
+        fEcanvas->GetCanvas()->Update(); 
+
       }
     }
   }
